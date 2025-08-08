@@ -1,0 +1,18 @@
+import uuid
+from sqlalchemy import Column, String, Integer, BigInteger, ForeignKey
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
+from src.database.db import Base
+
+class Image(Base):
+    __tablename__ = "image"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    order = Column(Integer)
+    post_id = Column(UUID(as_uuid=True), ForeignKey("post.id"))
+    orig_name = Column(String)
+    media_type = Column(String)
+    file_size = Column(BigInteger)
+    path = Column(String)
+
+    post = relationship("Post", back_populates="images")
