@@ -8,9 +8,9 @@ class User(Base):
     __tablename__ = "user"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    clerk_id = Column(String, unique=True, nullable=False)
+    clerk_id = Column(String, nullable=False, unique=True)
     username = Column(String, nullable=False, unique=True)
-    email = Column(String, nullable=False, unique=True)
+    email = Column(String, nullable=True, unique=True)
     password = Column(String, nullable=True)
     first_name = Column(String)
     middle_name = Column(String)

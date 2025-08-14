@@ -7,9 +7,9 @@ from src.database.db import get_db
 
 router = APIRouter(prefix="/user", tags=["user"])
 
-router = APIRouter(prefix="/user", tags=["user"])
+# router = APIRouter(prefix="/user", tags=["user"])
 
-@router.post("/", response_model=schema.UserOut)
+@router.post("", response_model=schema.UserOut)
 def create_user(user: schema.UserCreate, db: Session = Depends(get_db)):
     return service.create_user_from_clerk(db, user)
 
