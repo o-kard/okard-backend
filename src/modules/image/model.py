@@ -9,10 +9,12 @@ class Image(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     order = Column(Integer)
-    post_id = Column(UUID(as_uuid=True), ForeignKey("post.id"))
+    post_id = Column(UUID(as_uuid=True), ForeignKey("post.id"), nullable=True)
+    campaign_id = Column(UUID(as_uuid=True), ForeignKey("campaign.id"), nullable=True)
     orig_name = Column(String)
     media_type = Column(String)
     file_size = Column(BigInteger)
     path = Column(String)
 
     post = relationship("Post", back_populates="images")
+    campaign = relationship("Campaign", back_populates="images")

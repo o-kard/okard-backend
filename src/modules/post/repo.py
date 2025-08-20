@@ -1,19 +1,31 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from . import model, schema
 from uuid import UUID
+from src.modules.campaign import model as camp_model
+from src.modules.image import model as image_model
 
 def list_posts(db: Session):
-    return db.query(model.Post).all()
+    return (
+        db.query(model.Post)
+        .options(
+            joinedload(model.Post.images),                       
+            joinedload(model.Post.campaigns)
+                .joinedload(camp_model.Campaign.images)           
+        )
+        .all()
+    )
 
-def get_post(db: Session, post_id: UUID):
-    return db.query(model.Post).filter(model.Post.id == post_id).first()
-
-def create_post(db: Session, post: schema.PostCreate):
-    db_post = model.Post(**post.model_dump())
-    db.add(db_post)
-    db.commit()
-    db.refresh(db_post)
-    return db_post
+def get_post(db: Session, post_id):
+    return (
+        db.query(model.Post)
+        .options(
+            joinedload(model.Post.images),
+            joinedload(model.Post.campaigns)
+                .joinedload(camp_model.Campaign.images)
+        )
+        .filter(model.Post.id == post_id)
+        .first()
+    )
 
 def update_post(db: Session, db_post: model.Post, data: schema.PostUpdate):
     for key, value in data.model_dump().items():
@@ -25,4 +37,11 @@ def update_post(db: Session, db_post: model.Post, data: schema.PostUpdate):
 def delete_post(db: Session, db_post: model.Post):
     db.delete(db_post)
     db.commit()
+    return db_post
+
+def create_post_by_user(db: Session, user_id: UUID, data: schema.PostCreate) -> model.Post:
+    db_post = model.Post(**data.model_dump(), user_id=user_id)
+    db.add(db_post)
+    db.commit()
+    db.refresh(db_post)
     return db_post

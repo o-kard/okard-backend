@@ -1,9 +1,15 @@
-from src.modules.test import model
 from fastapi import FastAPI
 from src.database.db import engine
 from src.modules.test.model import Base
-from src.modules.test.controller import router as test_router
 from fastapi.middleware.cors import CORSMiddleware
+
+from src.modules.test import model as test_model
+from src.modules.post import model as post_model
+from src.modules.image import model as image_model
+from src.modules.user import model as user_model
+from src.modules.campaign import model as campaign_model
+
+from src.modules.test.controller import router as test_router
 from src.modules.post.controller import router as post_router
 from src.modules.image.controller import router as image_router
 from src.modules.user.controller import router as user_router
@@ -11,7 +17,6 @@ from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 
 Base.metadata.create_all(bind=engine)
-
 
 app = FastAPI()
 

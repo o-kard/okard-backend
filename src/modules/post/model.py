@@ -25,7 +25,7 @@ class Post(Base):
     __tablename__ = "post"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("user.id"),)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     effective_start_from = Column(DateTime, nullable=True)
     effective_end_date = Column(DateTime, nullable=True)
@@ -39,3 +39,4 @@ class Post(Base):
     supporter = Column(Integer, default=0)
 
     images = relationship("Image", back_populates="post", cascade="all, delete")
+    campaigns = relationship("Campaign", back_populates="post", cascade="all, delete")

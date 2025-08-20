@@ -17,6 +17,8 @@ class ImageUpdate(ImageBase):
 
 class ImageOut(ImageBase):
     id: UUID
+    post_id: Optional[UUID] = None
+    campaign_id: Optional[UUID] = None
     path: str
 
     class Config:

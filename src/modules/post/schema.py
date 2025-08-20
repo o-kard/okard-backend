@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Optional, List
 from .model import PostState, PostStatus, PostCategory
 from src.modules.image.schema import ImageOut
+from src.modules.campaign.schema import CampaignOut
 
 class PostBase(BaseModel):
     effective_start_from: Optional[datetime]
@@ -27,6 +28,7 @@ class PostOut(PostBase):
     id: UUID
     created_at: datetime
     images: List[ImageOut] = []
+    campaigns: List[CampaignOut] = []
 
     class Config:
         orm_mode = True
