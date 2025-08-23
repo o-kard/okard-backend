@@ -16,7 +16,6 @@ async def create_user(
     image: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db)
 ):
-    print('In controller')
     try:
         user_obj = schema.UserCreate(**json.loads(data))
     except Exception:
@@ -32,9 +31,13 @@ async def create_user(
         
     return user_response
 
-@router.get("/me", response_model=schema.UserOut)
+@router.get("/{clerk_id}", response_model=schema.UserOut)
 def get_user_by_clerk_id(clerk_id: str, db: Session = Depends(get_db)):
     user = service.get_user_by_clerk_id(db, clerk_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+
+@router.get("/exists/{clerk_id}", response_model=schema.ExistsOut)
+def user_exists(clerk_id: str, db: Session = Depends(get_db)):
+    return {"exists": service.get_user_by_clerk_id(db, clerk_id) is not None}

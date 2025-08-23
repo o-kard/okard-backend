@@ -26,3 +26,9 @@ class UserOut(UserCreate):
     
     class Config:
         orm_mode = True
+        
+class ExistsOut(BaseModel):
+    exists: bool
+    
+    class Config:
+        orm_mode = True
