@@ -1,8 +1,9 @@
 # modules/user/schema.py
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, ConfigDict
 from uuid import UUID
 from datetime import date
 from typing import Optional
+from src.modules.image.schema import ImageOut
 
 class UserCreate(BaseModel):
     clerk_id: str 
@@ -15,9 +16,13 @@ class UserCreate(BaseModel):
     tel: Optional[str] = None
     country: Optional[UUID] = None
     birth_date: Optional[date] = None
-    image_id: Optional[UUID] = None
     user_description: Optional[str] = None
 
 class UserOut(UserCreate):
+    id: UUID
     campaign_number: int
     contribution_number: int
+    image: ImageOut | None = None
+    
+    class Config:
+        orm_mode = True

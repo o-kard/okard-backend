@@ -3,10 +3,11 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 from src.database.db import get_db
 from . import schema, service
+from fastapi import Form
 
 router = APIRouter(prefix="/image", tags=["Image"])
 
-@router.get("/", response_model=list[schema.ImageOut])
+@router.get("", response_model=list[schema.ImageOut])
 def list_images(db: Session = Depends(get_db)):
     return service.list_images(db)
 
@@ -19,11 +20,13 @@ def get_image(image_id: UUID, db: Session = Depends(get_db)):
 
 @router.post("/upload", response_model=schema.ImageOut)
 async def upload_image(
-    post_id: UUID,
+    db: Session = Depends(get_db),
     file: UploadFile = File(...),
-    db: Session = Depends(get_db)
+    post_id: UUID | None = Form(None),
+    clerk_id: str | None = Form(None),
 ):
-    return await service.create_image_from_upload(db, post_id, file)
+    print(f"Received upload request: post_id={post_id}, user_id={clerk_id}, file={file.filename}")
+    return await service.create_image_from_upload(db, file, post_id, clerk_id)
 
 @router.delete("/{image_id}", response_model=schema.ImageOut)
 def delete_image(image_id: UUID, db: Session = Depends(get_db)):

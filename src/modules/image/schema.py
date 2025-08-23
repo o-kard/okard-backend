@@ -3,8 +3,9 @@ from uuid import UUID
 from typing import Optional
 
 class ImageBase(BaseModel):
-    order: Optional[int]
-    post_id: UUID
+    order: Optional[int] = None
+    post_id: Optional[UUID] = None  # Optional for post association
+    user_id: Optional[UUID] = None  # Optional for user association
     orig_name: str
     media_type: str
     file_size: int

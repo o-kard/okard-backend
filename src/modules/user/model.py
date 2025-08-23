@@ -1,6 +1,7 @@
 # modules/user/model.py
 from sqlalchemy import Column, String, Date, Integer, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 from uuid import uuid4
 from src.database.db import Base
 
@@ -19,7 +20,8 @@ class User(Base):
     tel = Column(String)
     country = Column(UUID(as_uuid=True), nullable=True)
     birth_date = Column(Date)
-    image_id = Column(UUID(as_uuid=True), nullable=True)
     user_description = Column(String)
     campaign_number = Column(Integer, default=0)
     contribution_number = Column(Integer, default=0)
+    
+    images = relationship("Image", back_populates="user", cascade="all, delete")
