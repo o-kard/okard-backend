@@ -6,8 +6,9 @@ from sqlalchemy import Tuple
 from sqlalchemy.orm import Session
 from uuid import UUID
 from . import repo, schema, model
-from src.modules.image import model as image_model, repo as image_repo
+from src.modules.image import model as image_model, repo as image_repo, service as image_service
 from src.modules.campaign import schema as campaign_schema, service as campaign_service
+from src.modules.reward import schema as reward_schema, service as reward_service
 from pathlib import Path
 from src.modules.user.repo import get_user_by_clerk_id 
 import os
@@ -21,27 +22,27 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 def _abs(rel: str) -> str:
     return (BASE_DIR / rel.lstrip("/")).as_posix()
 
-def _ensure_upload_dir():
-    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+# def _ensure_upload_dir():
+#     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
-async def _save_images_and_attach_to_post(db: Session, db_post: model.Post, files: Optional[List[UploadFile]]):
-    if not files:
-        return
-    _ensure_upload_dir()
-    for file in files:
-        content = await file.read()
-        ext = os.path.splitext(file.filename)[1]
-        file_name = f"{uuid.uuid4().hex}{ext}"
-        (UPLOAD_DIR / file_name).write_bytes(content)
+# async def _save_images_and_attach_to_post(db: Session, db_post: model.Post, files: Optional[List[UploadFile]]):
+#     if not files:
+#         return
+#     _ensure_upload_dir()
+#     for file in files:
+#         content = await file.read()
+#         ext = os.path.splitext(file.filename)[1]
+#         file_name = f"{uuid.uuid4().hex}{ext}"
+#         (UPLOAD_DIR / file_name).write_bytes(content)
 
-        image = image_model.Image(
-            post_id=db_post.id,
-            orig_name=file.filename,
-            media_type=(file.content_type or "application/octet-stream"),
-            file_size=len(content),
-            path=f"/uploads/images/{file_name}",
-        )
-        image_repo.create_image(db, image)
+#         image = image_model.Image(
+#             post_id=db_post.id,
+#             orig_name=file.filename,
+#             media_type=(file.content_type or "application/octet-stream"),
+#             file_size=len(content),
+#             path=f"/uploads/images/{file_name}",
+#         )
+#         image_repo.create_image(db, image)
 
 
 def verify_post_owner(db: Session, post_id: UUID, clerk_id: str) -> model.Post:
@@ -54,7 +55,6 @@ def verify_post_owner(db: Session, post_id: UUID, clerk_id: str) -> model.Post:
     return post
 
 def list_posts(db: Session):
-    print(UPLOAD_DIR)
     return repo.list_posts(db)
 
 def get_post(db: Session, post_id: UUID):
@@ -82,6 +82,13 @@ def delete_post(db: Session, post_id: UUID):
                 ap = _abs(image.path)
                 if os.path.exists(ap):
                     os.remove(ap)
+    
+    for reward in list(db_post.rewards):
+        for image in list(reward.images):
+            if image.path:
+                ap = _abs(image.path)
+                if os.path.exists(ap):
+                    os.remove(ap)
 
     return repo.delete_post(db, db_post)
 
@@ -94,6 +101,8 @@ async def create_post(
     post_images: Optional[List[UploadFile]] = None,
     campaigns: Optional[List[campaign_schema.CampaignCreate]] = None, 
     campaign_images: Optional[List[UploadFile]] = None,
+    rewards: Optional[List[dict]] = None,
+    reward_images: Optional[List[UploadFile]] = None,
 ):
     user = get_user_by_clerk_id(db, clerk_id)
     if not user:
@@ -102,8 +111,8 @@ async def create_post(
     # 1) create post
     db_post = repo.create_post_by_user(db, user_id=user.id, data=post_data)
 
-    # 2) post images (append on create)
-    await _save_images_and_attach_to_post(db, db_post, post_images)
+    # 2) post images
+    await image_service._save_files_and_create_images(db, db_post.id, post_images, parent_type="post")
 
     # 3) campaigns (create only; enforce 1:1 with images)
     if campaigns:
@@ -118,6 +127,14 @@ async def create_post(
                 db=db, campaign_data=[create_obj], files=[files[idx]]
             )
 
+    if rewards:
+        rfiles = reward_images or []
+        for idx, item in enumerate(rewards):
+            payload = {k: v for k, v in item.items() if k not in ["id", "fileIndex"]}
+            payload.setdefault("post_id", db_post.id)
+            rcreate = reward_schema.RewardCreate(**payload)
+            await reward_service.create_reward_with_images(db=db, reward_data=[rcreate], files=[rfiles[idx]])
+
     return repo.get_post(db, db_post.id)
 
 
@@ -130,6 +147,8 @@ async def update_post(
     post_images: Optional[List[UploadFile]] = None,       
     campaigns_payload: Optional[List[dict]] = None,       
     campaign_images: Optional[List[UploadFile]] = None,
+    rewards_payload: Optional[List[dict]] = None,
+    reward_images: Optional[List[UploadFile]] = None,
 ):
     db_post = verify_post_owner(db, post_id, clerk_id)
 
@@ -146,7 +165,7 @@ async def update_post(
                     os.remove(ap)
             db.delete(image)
         db.commit()
-        await _save_images_and_attach_to_post(db, db_post, post_images)
+        await image_service._save_files_and_create_images(db, db_post.id, post_images, parent_type="post")
 
     # 3) campaigns
     if campaigns_payload is not None:
@@ -196,6 +215,46 @@ async def update_post(
             await campaign_service.create_campaign_with_images(
                 db=db, campaign_data=[create_obj], files=[imgs[idx]]
             )
+        
+    if rewards_payload is not None:
+        imgs = reward_images or []
+        current = {str(r.id): r for r in db_post.rewards}
+        existing_ids = set(current.keys())
+        incoming_ids = set(str(it["id"]) for it in rewards_payload if it.get("id"))
+        to_delete_ids = existing_ids - incoming_ids
+        to_update_items = [it for it in rewards_payload if it.get("id") and str(it["id"]) in existing_ids]
+        to_create_items = [it for it in rewards_payload if not it.get("id") or str(it["id"]) not in existing_ids]
+
+        # delete
+        for rid in to_delete_ids:
+            await reward_service.delete_reward(db=db, reward_id=UUID(rid))
+
+        # update
+        for it in to_update_items:
+            rid = UUID(it["id"])
+            payload = {k: v for k, v in it.items() if k not in ["id", "fileIndex"]}
+            upd_obj = reward_schema.RewardUpdate(**payload)
+            file = None
+            if "fileIndex" in it and it["fileIndex"] is not None:
+                idx = int(it["fileIndex"])
+                if idx < 0 or idx >= len(imgs):
+                    raise HTTPException(status_code=400, detail="Invalid reward fileIndex")
+                file = imgs[idx]
+            await reward_service.update_reward_with_images(db=db, reward_id=rid,
+                                                           reward_data=upd_obj,
+                                                           files=([file] if file else None))
+
+        # create
+        for it in to_create_items:
+            payload = {k: v for k, v in it.items() if k not in ["id", "fileIndex"]}
+            payload.setdefault("post_id", db_post.id)
+            if "fileIndex" not in it or it["fileIndex"] is None:
+                raise HTTPException(status_code=400, detail="New reward requires an image (fileIndex).")
+            idx = int(it["fileIndex"])
+            if idx < 0 or idx >= len(imgs):
+                raise HTTPException(status_code=400, detail="Invalid reward fileIndex")
+            rcreate = reward_schema.RewardCreate(**payload)
+            await reward_service.create_reward_with_images(db=db, reward_data=[rcreate], files=[imgs[idx]])
 
     return repo.get_post(db, post_id)
 

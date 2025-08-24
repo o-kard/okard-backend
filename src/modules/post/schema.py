@@ -2,6 +2,8 @@ from pydantic import BaseModel
 from uuid import UUID
 from datetime import datetime
 from typing import Optional, List
+
+from src.modules.reward.schema import RewardOut
 from .model import PostState, PostStatus, PostCategory
 from src.modules.image.schema import ImageOut
 from src.modules.campaign.schema import CampaignOut
@@ -29,6 +31,7 @@ class PostOut(PostBase):
     created_at: datetime
     images: List[ImageOut] = []
     campaigns: List[CampaignOut] = []
+    rewards: List[RewardOut] = []
 
     class Config:
         orm_mode = True

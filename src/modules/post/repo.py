@@ -3,16 +3,16 @@ from . import model, schema
 from uuid import UUID
 from src.modules.campaign import model as camp_model
 from src.modules.image import model as image_model
+from src.modules.reward import model as reward_model
 
 def list_posts(db: Session):
     return (
         db.query(model.Post)
         .options(
-            joinedload(model.Post.images),                       
-            joinedload(model.Post.campaigns)
-                .joinedload(camp_model.Campaign.images)           
-        )
-        .all()
+            joinedload(model.Post.images),
+            joinedload(model.Post.campaigns).joinedload(camp_model.Campaign.image), 
+            joinedload(model.Post.rewards).joinedload(reward_model.Reward.image),
+        ).all()
     )
 
 def get_post(db: Session, post_id):
@@ -20,8 +20,8 @@ def get_post(db: Session, post_id):
         db.query(model.Post)
         .options(
             joinedload(model.Post.images),
-            joinedload(model.Post.campaigns)
-                .joinedload(camp_model.Campaign.images)
+            joinedload(model.Post.campaigns).joinedload(camp_model.Campaign.image),
+            joinedload(model.Post.rewards).joinedload(reward_model.Reward.image),
         )
         .filter(model.Post.id == post_id)
         .first()

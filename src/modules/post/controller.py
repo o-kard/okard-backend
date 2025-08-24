@@ -30,11 +30,13 @@ def delete(post_id: UUID,clerk_id: str = Query(...), db: Session = Depends(get_d
         raise HTTPException(status_code=404, detail="Not found")
 
 @router.post("/with-campaigns", response_model=schema.PostOut)
-async def create_with_campaigns(
+async def create(
     post_data: str = Form(...),
     images: Union[List[UploadFile], UploadFile, None] = File(None),
     campaigns: Union[str, None] = Form(None),                                  
-    campaign_images: Union[List[UploadFile], UploadFile, None] = File(None),    
+    campaign_images: Union[List[UploadFile], UploadFile, None] = File(None),
+    rewards: Union[str, None] = Form(None),                     
+    reward_images: Union[List[UploadFile], UploadFile, None] = File(None),     
     clerk_id: str = Query(...),
     db: Session = Depends(get_db),
 ):
@@ -50,19 +52,13 @@ async def create_with_campaigns(
     if images is not None:
         post_img_list = images if isinstance(images, list) else [images]
 
-    camp_list_raw: Optional[List[dict]] = None
+    camp_list_raw = None
     if campaigns:
-        try:
-            parsed = json.loads(campaigns)
-            if not isinstance(parsed, list):
-                raise ValueError
-            for it in parsed:
-                if not isinstance(it, dict) or "order" not in it:
-                    raise ValueError
-            camp_list_raw = parsed
-        except Exception:
-            raise HTTPException(status_code=400, detail="Invalid campaigns payload")
-
+        parsed = json.loads(campaigns)
+        if not isinstance(parsed, list): raise HTTPException(status_code=400, detail="Invalid campaigns payload")
+        for it in parsed:
+            if not isinstance(it, dict) or "order" not in it: raise HTTPException(status_code=400, detail="Invalid campaigns payload")
+        camp_list_raw = parsed
 
     camp_img_list: Optional[List[UploadFile]] = None
     if campaign_images is not None:
@@ -72,22 +68,38 @@ async def create_with_campaigns(
         if not camp_img_list or len(camp_img_list) != len(camp_list_raw):
             raise HTTPException(status_code=400, detail="campaign_images must match campaigns count (1:1).")
 
+    reward_list_raw = None
+    if rewards:
+        parsed = json.loads(rewards)
+        if not isinstance(parsed, list): raise HTTPException(status_code=400, detail="Invalid rewards payload")
+        for it in parsed:
+            if not isinstance(it, dict) or "order" not in it: raise HTTPException(status_code=400, detail="Invalid rewards payload")
+        reward_list_raw = parsed
+
+    reward_img_list = None
+    if reward_images is not None:
+        reward_img_list = reward_images if isinstance(reward_images, list) else [reward_images]
+
+    if reward_list_raw is not None:
+        if not reward_img_list or len(reward_img_list) != len(reward_list_raw):
+            raise HTTPException(status_code=400, detail="reward_images must match rewards count (1:1).")
+
     return await service.create_post(
-        db=db,
-        clerk_id=clerk_id,
-        post_data=post_obj,
-        post_images=post_img_list,        
-        campaigns=camp_list_raw,              
-        campaign_images=camp_img_list,
+        db=db, clerk_id=clerk_id, post_data=post_obj,
+        post_images=post_img_list,
+        campaigns=camp_list_raw, campaign_images=camp_img_list,
+        rewards=reward_list_raw, reward_images=reward_img_list,   
     )
 
 @router.put("/{post_id}/with-campaigns", response_model=schema.PostOut)
-async def update_with_campaigns(
+async def update(
     post_id: UUID,
     post_data: Union[str, None] = Form(None),
     images: Union[List[UploadFile], UploadFile, None] = File(None),              
     campaigns: Union[str, None] = Form(None),                                 
-    campaign_images: Union[List[UploadFile], UploadFile, None] = File(None),     
+    campaign_images: Union[List[UploadFile], UploadFile, None] = File(None),
+    rewards: Union[str, None] = Form(None),                                 
+    reward_images: Union[List[UploadFile], UploadFile, None] = File(None),          
     clerk_id: str = Query(...),
     db: Session = Depends(get_db),
 ):
@@ -108,19 +120,26 @@ async def update_with_campaigns(
     if campaign_images is not None:
         camp_img_list = campaign_images if isinstance(campaign_images, list) else [campaign_images]
 
+    reward_img_list: Optional[List[UploadFile]] = None
+    if reward_images is not None:
+        reward_img_list = reward_images if isinstance(reward_images, list) else [reward_images]
+
     # --- parse campaigns manifest (list[dict]) ---
-    camp_payload: Optional[List[dict]] = None
+    camp_payload = None
     if campaigns:
-        try:
-            parsed = json.loads(campaigns)
-            if not isinstance(parsed, list):
-                raise ValueError
-            for it in parsed:
-                if not isinstance(it, dict) or "order" not in it:
-                    raise ValueError
-            camp_payload = parsed
-        except Exception:
-            raise HTTPException(status_code=400, detail="Invalid campaigns payload")
+        parsed = json.loads(campaigns)
+        if not isinstance(parsed, list): raise HTTPException(status_code=400, detail="Invalid campaigns payload")
+        for it in parsed:
+            if not isinstance(it, dict) or "order" not in it: raise HTTPException(status_code=400, detail="Invalid campaigns payload")
+        camp_payload = parsed
+
+    reward_payload = None
+    if rewards:
+        parsed = json.loads(rewards)
+        if not isinstance(parsed, list): raise HTTPException(status_code=400, detail="Invalid rewards payload")
+        for it in parsed:
+            if not isinstance(it, dict) or "order" not in it: raise HTTPException(status_code=400, detail="Invalid rewards payload")
+        reward_payload = parsed
 
     # --- call service ---
     return await service.update_post(
@@ -131,4 +150,6 @@ async def update_with_campaigns(
         post_images=post_img_list,    
         campaigns_payload=camp_payload,  
         campaign_images=camp_img_list,
+        rewards_payload=reward_payload,  
+        reward_images=reward_img_list,
     )

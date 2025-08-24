@@ -8,6 +8,7 @@ from src.modules.post import model as post_model
 from src.modules.image import model as image_model
 from src.modules.user import model as user_model
 from src.modules.campaign import model as campaign_model
+from src.modules.reward import model as reward_model
 
 from src.modules.test.controller import router as test_router
 from src.modules.post.controller import router as post_router

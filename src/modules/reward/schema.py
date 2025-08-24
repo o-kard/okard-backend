@@ -4,20 +4,22 @@ from datetime import datetime
 from typing import Optional, List
 from src.modules.image.schema import ImageOut
 
-class CampaignBase(BaseModel):
-    campaign_header: Optional[str] = None    
-    campaign_description: Optional[str] = None 
+class RewardBase(BaseModel):
+    reward_header: Optional[str] = None    
+    reward_description: Optional[str] = None 
     order: int
+    reward_amount: int
+    backup_amount: int
 
-class CampaignCreate(CampaignBase):
+class RewardCreate(RewardBase):
     post_id: UUID
 
-class CampaignUpdate(CampaignBase):
+class RewardUpdate(RewardBase):
     post_id: Optional[UUID] = None             
 
-class CampaignOut(CampaignBase):
+class RewardOut(RewardBase):
     id: UUID
     created_at: datetime
-    image: List[ImageOut] = []              
+    images: List[ImageOut] = []              
     class Config:
         orm_mode = True

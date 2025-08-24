@@ -5,8 +5,8 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from src.database.db import Base
 
-class Campaign(Base):
-    __tablename__ = "campaign"
+class Reward(Base):
+    __tablename__ = "reward"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     post_id = Column(UUID(as_uuid=True), ForeignKey("post.id"),)
@@ -15,9 +15,11 @@ class Campaign(Base):
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
     )
-    campaign_header = Column(String, nullable=False)
-    campaign_description = Column(String, nullable=True)
+    reward_header = Column(String, nullable=False)
+    reward_description = Column(String, nullable=True)
     order = Column(Integer, default=0)
+    reward_amount = Column(Integer,default=0)
+    backup_amount = Column(Integer,default=0)
 
-    post = relationship("Post", back_populates="campaigns")  
-    image = relationship("Image", back_populates="campaign", cascade="all, delete")
+    post = relationship("Post", back_populates="rewards")  
+    image = relationship("Image", back_populates="reward", cascade="all, delete")
