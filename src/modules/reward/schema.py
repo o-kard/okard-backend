@@ -20,6 +20,6 @@ class RewardUpdate(RewardBase):
 class RewardOut(RewardBase):
     id: UUID
     created_at: datetime
-    images: List[ImageOut] = []              
+    image: List[ImageOut] = []              
     class Config:
         orm_mode = True
