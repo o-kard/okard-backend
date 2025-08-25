@@ -63,7 +63,7 @@ async def update_reward_with_images(
     if not files:
         return db_reward
 
-    for image in list(db_reward.images):
+    for image in list(db_reward.image):
         if image.path:
             ap = _abs(image.path)
             if os.path.exists(ap):

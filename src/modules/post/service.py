@@ -99,7 +99,7 @@ async def create_post(
     clerk_id: str,
     post_data: schema.PostCreate,
     post_images: Optional[List[UploadFile]] = None,
-    campaigns: Optional[List[campaign_schema.CampaignCreate]] = None, 
+    campaigns: Optional[List[dict]] = None, 
     campaign_images: Optional[List[UploadFile]] = None,
     rewards: Optional[List[dict]] = None,
     reward_images: Optional[List[UploadFile]] = None,
@@ -114,12 +114,12 @@ async def create_post(
     # 2) post images
     await image_service._save_files_and_create_images(db, db_post.id, post_images, parent_type="post")
 
-    # 3) campaigns (create only; enforce 1:1 with images)
+    # 3) campaigns
     if campaigns:
         files = campaign_images or []
 
         for idx, item in enumerate(campaigns):
-            payload = {k: v for k, v in item.items() if k not in ["id", "fileIndex"]}
+            payload = {k: v for k, v in item.items() if k not in ["id", "isEdited"]}
             payload.setdefault("post_id", db_post.id)
             create_obj = campaign_schema.CampaignCreate(**payload)
 
@@ -130,10 +130,13 @@ async def create_post(
     if rewards:
         rfiles = reward_images or []
         for idx, item in enumerate(rewards):
-            payload = {k: v for k, v in item.items() if k not in ["id", "fileIndex"]}
+            payload = {k: v for k, v in item.items() if k not in ["id", "isEdited"]}
             payload.setdefault("post_id", db_post.id)
             rcreate = reward_schema.RewardCreate(**payload)
-            await reward_service.create_reward_with_images(db=db, reward_data=[rcreate], files=[rfiles[idx]])
+
+            await reward_service.create_reward_with_images(
+                db=db, reward_data=[rcreate], files=[rfiles[idx]]
+            )
 
     return repo.get_post(db, db_post.id)
 
@@ -167,15 +170,16 @@ async def update_post(
         db.commit()
         await image_service._save_files_and_create_images(db, db_post.id, post_images, parent_type="post")
 
-    # 3) campaigns
+    # --- campaigns ---
     if campaigns_payload is not None:
         imgs = campaign_images or []
+        ptr = 0
 
         current = {str(c.id): c for c in db_post.campaigns}
         existing_ids = set(current.keys())
 
         incoming_ids = set(str(it["id"]) for it in campaigns_payload if it.get("id"))
-        to_delete_ids = existing_ids - incoming_ids
+        to_delete_ids   = existing_ids - incoming_ids
         to_update_items = [it for it in campaigns_payload if it.get("id") and str(it["id"]) in existing_ids]
         to_create_items = [it for it in campaigns_payload if not it.get("id") or str(it["id"]) not in existing_ids]
 
@@ -183,18 +187,17 @@ async def update_post(
         for cid in to_delete_ids:
             await campaign_service.delete_campaign(db=db, campaign_id=UUID(cid))
 
-        # update
+        # update 
         for it in to_update_items:
             cid = UUID(it["id"])
-            payload = {k: v for k, v in it.items() if k not in ["id", "fileIndex"]}
+            payload = {k: v for k, v in it.items() if k not in ["id", "isEdited"]}
             upd_obj = campaign_schema.CampaignUpdate(**payload)
 
             file = None
-            if "fileIndex" in it and it["fileIndex"] is not None:
-                idx = int(it["fileIndex"])
-                if idx < 0 or idx >= len(imgs):
-                    raise HTTPException(status_code=400, detail="Invalid campaign fileIndex")
-                file = imgs[idx]
+            if it.get("isEdited"):            
+                if ptr >= len(imgs):
+                    raise HTTPException(status_code=400, detail="Missing campaign image for edited item")
+                file = imgs[ptr]; ptr += 1
 
             await campaign_service.update_campaign_with_images(
                 db=db, campaign_id=cid, campaign_data=upd_obj, files=([file] if file else None)
@@ -202,59 +205,63 @@ async def update_post(
 
         # create
         for it in to_create_items:
-            payload = {k: v for k, v in it.items() if k not in ["id", "fileIndex"]}
+            payload = {k: v for k, v in it.items() if k not in ["id", "isEdited"]}
             payload.setdefault("post_id", db_post.id)
 
-            if "fileIndex" not in it or it["fileIndex"] is None:
-                raise HTTPException(status_code=400, detail="New campaign requires an image (fileIndex).")
-            idx = int(it["fileIndex"])
-            if idx < 0 or idx >= len(imgs):
-                raise HTTPException(status_code=400, detail="Invalid campaign fileIndex")
+            if ptr >= len(imgs):
+                raise HTTPException(status_code=400, detail="New campaign requires an image")
+            file = imgs[ptr]; ptr += 1
 
-            create_obj = campaign_schema.CampaignCreate(**payload)
             await campaign_service.create_campaign_with_images(
-                db=db, campaign_data=[create_obj], files=[imgs[idx]]
+                db=db, campaign_data=[campaign_schema.CampaignCreate(**payload)], files=[file]
             )
+
         
+    # --- rewards ---
     if rewards_payload is not None:
         imgs = reward_images or []
-        current = {str(r.id): r for r in db_post.rewards}
+        ptr = 0
+
+        current = {str(c.id): c for c in db_post.rewards}
         existing_ids = set(current.keys())
+
         incoming_ids = set(str(it["id"]) for it in rewards_payload if it.get("id"))
-        to_delete_ids = existing_ids - incoming_ids
+        to_delete_ids   = existing_ids - incoming_ids
         to_update_items = [it for it in rewards_payload if it.get("id") and str(it["id"]) in existing_ids]
         to_create_items = [it for it in rewards_payload if not it.get("id") or str(it["id"]) not in existing_ids]
 
         # delete
-        for rid in to_delete_ids:
-            await reward_service.delete_reward(db=db, reward_id=UUID(rid))
+        for cid in to_delete_ids:
+            await reward_service.delete_reward(db=db, reward_id=UUID(cid))
 
-        # update
+        # update 
         for it in to_update_items:
-            rid = UUID(it["id"])
-            payload = {k: v for k, v in it.items() if k not in ["id", "fileIndex"]}
+            cid = UUID(it["id"])
+            payload = {k: v for k, v in it.items() if k not in ["id", "isEdited"]}
             upd_obj = reward_schema.RewardUpdate(**payload)
-            file = None
-            if "fileIndex" in it and it["fileIndex"] is not None:
-                idx = int(it["fileIndex"])
-                if idx < 0 or idx >= len(imgs):
-                    raise HTTPException(status_code=400, detail="Invalid reward fileIndex")
-                file = imgs[idx]
-            await reward_service.update_reward_with_images(db=db, reward_id=rid,
-                                                           reward_data=upd_obj,
-                                                           files=([file] if file else None))
 
-        # create
+            file = None
+            if it.get("isEdited"):             
+                if ptr >= len(imgs):
+                    raise HTTPException(status_code=400, detail="Missing reward image for edited item")
+                file = imgs[ptr]; ptr += 1
+
+            await reward_service.update_reward_with_images(
+                db=db, reward_id=cid, reward_data=upd_obj, files=([file] if file else None)
+            )
+
+        # create 
         for it in to_create_items:
-            payload = {k: v for k, v in it.items() if k not in ["id", "fileIndex"]}
+            payload = {k: v for k, v in it.items() if k not in ["id", "isEdited"]}
             payload.setdefault("post_id", db_post.id)
-            if "fileIndex" not in it or it["fileIndex"] is None:
-                raise HTTPException(status_code=400, detail="New reward requires an image (fileIndex).")
-            idx = int(it["fileIndex"])
-            if idx < 0 or idx >= len(imgs):
-                raise HTTPException(status_code=400, detail="Invalid reward fileIndex")
-            rcreate = reward_schema.RewardCreate(**payload)
-            await reward_service.create_reward_with_images(db=db, reward_data=[rcreate], files=[imgs[idx]])
+
+            if ptr >= len(imgs):
+                raise HTTPException(status_code=400, detail="New reward requires an image")
+            file = imgs[ptr]; ptr += 1
+
+            await reward_service.create_reward_with_images(
+                db=db, reward_data=[reward_schema.RewardCreate(**payload)], files=[file]
+            )
 
     return repo.get_post(db, post_id)
 
