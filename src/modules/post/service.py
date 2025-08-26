@@ -77,14 +77,14 @@ def delete_post(db: Session, post_id: UUID):
                 os.remove(ap)
 
     for camp in list(db_post.campaigns):
-        for image in list(camp.images):
+        for image in list(camp.image):
             if image.path:
                 ap = _abs(image.path)
                 if os.path.exists(ap):
                     os.remove(ap)
     
     for reward in list(db_post.rewards):
-        for image in list(reward.images):
+        for image in list(reward.image):
             if image.path:
                 ap = _abs(image.path)
                 if os.path.exists(ap):
