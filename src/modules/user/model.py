@@ -24,4 +24,4 @@ class User(Base):
     campaign_number = Column(Integer, default=0)
     contribution_number = Column(Integer, default=0)
     
-    images = relationship("Image", back_populates="user", cascade="all, delete")
+    image = relationship("Image", back_populates="user", cascade="all, delete-orphan", uselist=False, single_parent=True)

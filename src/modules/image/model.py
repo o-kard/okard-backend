@@ -17,4 +17,4 @@ class Image(Base):
     path = Column(String)
 
     post = relationship("Post", back_populates="images")
-    user = relationship("User", back_populates="images")
+    user = relationship("User", back_populates="image", uselist=False)
