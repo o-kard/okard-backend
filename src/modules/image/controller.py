@@ -6,7 +6,7 @@ from . import schema, service
 
 router = APIRouter(prefix="/image", tags=["Image"])
 
-@router.get("/", response_model=list[schema.ImageOut])
+@router.get("", response_model=list[schema.ImageOut])
 def list_images(db: Session = Depends(get_db)):
     return service.list_images(db)
 

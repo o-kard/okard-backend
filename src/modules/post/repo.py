@@ -45,3 +45,10 @@ def create_post_by_user(db: Session, user_id: UUID, data: schema.PostCreate) -> 
     db.commit()
     db.refresh(db_post)
     return db_post
+
+def increment_current_amount(db: Session, post_id: UUID, delta: int):
+    db.query(model.Post).filter(model.Post.id == post_id).update(
+        {model.Post.current_amount: model.Post.current_amount + delta},
+        synchronize_session=False
+    )
+    db.commit()

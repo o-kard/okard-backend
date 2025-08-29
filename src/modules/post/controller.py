@@ -10,7 +10,7 @@ from fastapi import Form
 
 router = APIRouter(prefix="/post", tags=["Post"])
 
-@router.get("/", response_model=list[schema.PostOut])
+@router.get("", response_model=list[schema.PostOut])
 def list_posts(db: Session = Depends(get_db)):
     return service.list_posts(db)
 
