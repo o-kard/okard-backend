@@ -2,10 +2,12 @@ import os
 from typing import List, Optional
 import uuid
 from fastapi import  UploadFile
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from uuid import UUID
 from . import repo, schema, model
-from src.modules.image import model as image_model, repo as image_repo, service as image_service
+from src.modules.image import  service as image_service
+from src.modules.contributor import model as contributor_model
 from pathlib import Path
 import os
 import uuid
@@ -48,8 +50,11 @@ async def create_reward_with_images(
         await image_service._save_files_and_create_images(db, db_reward.id, files, parent_type="reward")
 
         db_rewards.append(db_reward)
-    return db_rewards
 
+    if db_rewards:
+        calculate_backup_amounts_for_post(db, db_rewards[0].post_id)
+
+    return db_rewards
 
 async def update_reward_with_images(
     db: Session,
@@ -70,8 +75,10 @@ async def update_reward_with_images(
                 os.remove(ap)
         db.delete(image)
     db.commit()
+    
 
     await image_service._save_files_and_create_images(db, db_reward.id, files, parent_type="reward")
+    calculate_backup_amounts_for_post(db, db_reward.post_id)
 
     return db_reward
 
@@ -84,5 +91,9 @@ def delete_reward(db: Session, reward_id: UUID):
             ap = _abs(image.path)
             if os.path.exists(ap):
                 os.remove(ap)
-
+    
+    calculate_backup_amounts_for_post(db, db_reward.post_id)
     return repo.delete_reward(db, db_reward)
+
+def calculate_backup_amounts_for_post(db: Session, post_id: UUID):
+    repo.calculate_backup_amounts_for_post(db, post_id)

@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from src.modules.user.service import get_user_by_clerk_id
 from . import repo, schema, model
 from src.modules.contributor import service as contributor_service
+from src.modules.reward import service as reward_service
 from src.modules.post import repo as post_repo
 
 def list_payments(db: Session) -> List[model.Payment]:
@@ -39,6 +40,8 @@ def create_payment(db: Session, clerk_id: str, data: schema.PaymentCreate) -> mo
         post_id=payload.post_id,
         delta=payload.amount
     )
+
+    reward_service.calculate_backup_amounts_for_post(db=db, post_id=payload.post_id)
 
     return db_payment
 
