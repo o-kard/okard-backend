@@ -9,6 +9,8 @@ class Image(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     order = Column(Integer)
+    post_id = Column(UUID(as_uuid=True), ForeignKey("post.id"))
+    user_id = Column(UUID(as_uuid=True), ForeignKey("user.id"))
     post_id = Column(UUID(as_uuid=True), ForeignKey("post.id"), nullable=True)
     campaign_id = Column(UUID(as_uuid=True), ForeignKey("campaign.id"), nullable=True)
     reward_id = Column(UUID(as_uuid=True), ForeignKey("reward.id"), nullable=True)
@@ -18,5 +20,6 @@ class Image(Base):
     path = Column(String)
 
     post = relationship("Post", back_populates="images")
+    user = relationship("User", back_populates="image", uselist=False)
     campaign = relationship("Campaign", back_populates="image")
     reward = relationship("Reward", back_populates="image")
