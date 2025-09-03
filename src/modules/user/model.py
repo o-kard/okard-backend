@@ -18,10 +18,11 @@ class User(Base):
     surname = Column(String)
     address = Column(String)
     tel = Column(String)
-    country = Column(UUID(as_uuid=True), nullable=True)
+    country_id = Column(UUID(as_uuid=True), ForeignKey("country.id"), nullable=True)
     birth_date = Column(Date)
     user_description = Column(String)
     campaign_number = Column(Integer, default=0)
     contribution_number = Column(Integer, default=0)
     
     image = relationship("Image", back_populates="user", cascade="all, delete-orphan", uselist=False, single_parent=True)
+    country = relationship("Country", back_populates="users")

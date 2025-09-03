@@ -26,6 +26,19 @@ async def create_image_from_upload(
             raise HTTPException(404, "User not found")
         user_id = user.id
         print(f"User found: {user_id}")
+        
+        if user.image:
+            old_path = user.image.path
+            # ลบไฟล์เก่า
+            if old_path:
+                abs_old_path = BASE_DIR / old_path.lstrip("/")
+                try:
+                    if abs_old_path.exists():
+                        abs_old_path.unlink()
+                except Exception:
+                    pass
+            repo.delete_image(db, user.image)
+            
     if not post_id and not clerk_id:
         raise ValueError("Either post_id or user_id is required")
     
@@ -44,7 +57,7 @@ async def create_image_from_upload(
         orig_name=file.filename,
         media_type=file.content_type,
         file_size=len(content),
-        path=file_path.as_posix(), 
+        path=f"/uploads/images/{file_name}", 
     )
     return repo.create_image(db, db_image)
 

@@ -13,3 +13,5 @@ async def create_user_from_clerk(
 def get_user_by_clerk_id(db: Session, clerk_id: str):
     return repo.get_user_by_clerk_id(db, clerk_id)
 
+def update_user_from_clerk(db: Session, user_id, user_data: schema.UserUpdate):
+    return repo.update_user(db, user_id, user_data)

@@ -3,9 +3,10 @@ from pydantic import BaseModel, EmailStr, ConfigDict
 from uuid import UUID
 from datetime import date
 from typing import Optional
+from src.modules.country.schema import CountryOut
 from src.modules.image.schema import ImageOut
 
-class UserCreate(BaseModel):
+class UserBase(BaseModel):
     clerk_id: str 
     username: str
     email: Optional[EmailStr] = None
@@ -14,15 +15,23 @@ class UserCreate(BaseModel):
     surname: Optional[str] = None
     address: Optional[str] = None
     tel: Optional[str] = None
-    country: Optional[UUID] = None
+    country_id: Optional[UUID] = None
     birth_date: Optional[date] = None
     user_description: Optional[str] = None
 
-class UserOut(UserCreate):
+class UserCreate(UserBase):
+    pass
+    
+class UserUpdate(UserBase):
+    remove_image: bool | None = None
+    pass
+
+class UserOut(UserBase):
     id: UUID
     campaign_number: int
     contribution_number: int
     image: ImageOut | None = None
+    country: CountryOut | None = None
     
     class Config:
         orm_mode = True
