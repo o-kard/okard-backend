@@ -2,6 +2,7 @@ from http.client import HTTPException
 import os
 from pathlib import Path
 from typing import List
+import uuid
 from sqlalchemy.orm import Session
 from uuid import UUID, uuid4
 
