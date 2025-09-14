@@ -11,6 +11,7 @@ from src.modules.campaign import model as campaign_model
 from src.modules.reward import model as reward_model
 from src.modules.contributor import model as contributor_model
 from src.modules.payment import model as payment_model
+from src.modules.notification import model as notification_model
 
 from src.modules.test.controller import router as test_router
 from src.modules.post.controller import router as post_router
@@ -18,6 +19,7 @@ from src.modules.image.controller import router as image_router
 from src.modules.user.controller import router as user_router
 from src.modules.country.controller import router as country_router
 from src.modules.payment.controller import router as payment_router
+from src.modules.notification.controller import router as notification_router
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 
@@ -45,5 +47,6 @@ app.include_router(user_router, prefix="/api")
 app.include_router(image_router, prefix="/api")
 app.include_router(country_router, prefix="/api")
 app.include_router(payment_router, prefix="/api")
+app.include_router(notification_router, prefix="/api")
 # app.include_router(image_router, prefix="/api")
 

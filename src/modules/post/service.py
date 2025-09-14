@@ -99,7 +99,7 @@ async def create_post(
     clerk_id: str,
     post_data: schema.PostCreate,
     post_images: Optional[List[UploadFile]] = None,
-    post_images_manifest = None,
+    post_images_manifest: Optional[list[dict]] = None,
     campaigns: Optional[List[dict]] = None, 
     campaign_images: Optional[List[UploadFile]] = None,
     rewards: Optional[List[dict]] = None,
