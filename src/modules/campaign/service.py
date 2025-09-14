@@ -45,8 +45,13 @@ async def create_campaign_with_images(
         db.commit()
         db.refresh(db_campaign)
 
-        await image_service._save_files_and_create_images(db, db_campaign.id, files, parent_type="campaign")
-
+        await image_service._save_files_and_create_images(
+            db,
+            parent_type="campaign",
+            parent_id=db_campaign.id,
+            files=files,                       
+            images_manifest=None,             
+        )
         db_campaigns.append(db_campaign)
     return db_campaigns
 

@@ -78,13 +78,22 @@ def delete_image(db: Session, image_id: UUID):
 
 async def _save_files_and_create_images(
     db: Session,
+    parent_type: str,          
     parent_id: UUID,
     files: List[UploadFile],
-    parent_type: str = "reward",  
+    images_manifest: Optional[List[dict]] = None,  
+    start_index: int = 1,                           
 ):
     saved_images = []
 
-    for file in files:
+    order_map: dict[str, int] = {}
+    if images_manifest:
+        for it in images_manifest:
+            fn = (it.get("filename") or "").strip()
+            if fn:
+                order_map[fn] = int(it.get("order") or start_index)
+
+    for i, file in enumerate(files, start=start_index):
         content = await file.read()
         ext = os.path.splitext(file.filename)[1]
         file_name = f"{uuid.uuid4().hex}{ext}"
@@ -93,12 +102,15 @@ async def _save_files_and_create_images(
         with open(file_path, "wb") as f:
             f.write(content)
 
+        img_order = order_map.get(file.filename, i)
+
         image_kwargs = dict(
             id=uuid.uuid4(),
             orig_name=file.filename,
             media_type=file.content_type or "application/octet-stream",
             file_size=len(content),
             path=f"/uploads/images/{file_name}",
+            order=img_order,  
         )
 
         if parent_type == "reward":
@@ -112,7 +124,6 @@ async def _save_files_and_create_images(
 
         image = model.Image(**image_kwargs)
         repo.create_image(db, image)
-
         saved_images.append(image)
 
     return saved_images
