@@ -35,6 +35,7 @@ def create_payment(db: Session, clerk_id: str, data: schema.PaymentCreate) -> mo
         raise HTTPException(status_code=404, detail="Post not found")
     
     prev_amount = post.current_amount 
+    print(prev_amount)
     goal_amount = post.goal_amount 
 
     db_payment = repo.create_payment(db, payload)
@@ -55,6 +56,7 @@ def create_payment(db: Session, clerk_id: str, data: schema.PaymentCreate) -> mo
     reward_service.calculate_backup_amounts_for_post(db=db, post_id=payload.post_id)
 
     new_amount = prev_amount + payload.amount
+
     if goal_amount and prev_amount < goal_amount <= new_amount:
         notif = notification_schema.NotificationCreate(
             user_id=post.user_id,             
@@ -62,7 +64,7 @@ def create_payment(db: Session, clerk_id: str, data: schema.PaymentCreate) -> mo
             post_id=post.id,
             notification_title="🎉 Goal reached!",
             notification_message=(
-                f"Your post \"{post.title}\" has reached its goal of {goal_amount}."
+                f"Your post \"{post.post_header}\" has reached its goal of {goal_amount}."
             ),
             type=NotificationType.goal,
         )
