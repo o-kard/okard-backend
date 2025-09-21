@@ -3,7 +3,7 @@ from typing import Optional, List
 from datetime import datetime
 from uuid import UUID
 
-from src.modules.user.schema import UserPublicOut
+from src.modules.user.schema import UserPublicResponse
 
 class CommentBase(BaseModel):
     content: str
@@ -21,7 +21,7 @@ class CommentOut(CommentBase):
     created_at: datetime
     
     is_liked: Optional[bool] = None
-    author: UserPublicOut
+    author: UserPublicResponse
     children: Optional[List["CommentOut"]] = None
 
     class Config:

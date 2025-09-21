@@ -12,7 +12,7 @@ from src.modules.image.service import create_image_from_upload, delete_image
 
 router = APIRouter(prefix="/user", tags=["user"])
 
-@router.post("", response_model=schema.UserOut)
+@router.post("", response_model=schema.UserResponse)
 async def create_user(
     data: str = Form(...), 
     image: Optional[UploadFile] = File(None),
@@ -33,7 +33,7 @@ async def create_user(
         
     return user_response
 
-@router.put("/update/{user_id}", response_model=schema.UserOut)
+@router.put("/update/{user_id}", response_model=schema.UserResponse)
 async def update_user(
     user_id: UUID,
     data: str = Form(...), 
@@ -58,13 +58,13 @@ async def update_user(
         
     return user_response
 
-@router.get("/{clerk_id}", response_model=schema.UserOut)
+@router.get("/{clerk_id}", response_model=schema.UserResponse)
 def get_user_by_clerk_id(clerk_id: str, db: Session = Depends(get_db)):
     user = service.get_user_by_clerk_id(db, clerk_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
-@router.get("/exists/{clerk_id}", response_model=schema.ExistsOut)
+@router.get("/exists/{clerk_id}", response_model=schema.UserExistsResponse)
 def user_exists(clerk_id: str, db: Session = Depends(get_db)):
     return {"exists": service.get_user_by_clerk_id(db, clerk_id) is not None}

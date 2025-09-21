@@ -26,7 +26,7 @@ class UserUpdate(UserBase):
     remove_image: bool | None = None
     pass
 
-class UserOut(UserBase):
+class UserResponse(UserBase):
     id: UUID
     campaign_number: int
     contribution_number: int
@@ -36,8 +36,16 @@ class UserOut(UserBase):
     class Config:
         orm_mode = True
         
-class ExistsOut(BaseModel):
+class UserExistsResponse(BaseModel):
     exists: bool
+    
+    class Config:
+        orm_mode = True
+        
+class UserPublicResponse(BaseModel):
+    id: UUID
+    username: str
+    image: ImageOut | None = None
     
     class Config:
         orm_mode = True

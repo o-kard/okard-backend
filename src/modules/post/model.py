@@ -41,3 +41,4 @@ class Post(Base):
     images = relationship("Image", back_populates="post", cascade="all, delete")
     campaigns = relationship("Campaign", back_populates="post", cascade="all, delete")
     rewards = relationship("Reward", back_populates="post", cascade="all, delete")
+    comments = relationship("Comment", back_populates="post", cascade="all, delete-orphan")
