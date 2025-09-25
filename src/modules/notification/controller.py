@@ -3,16 +3,16 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 from src.database.db import get_db
 from . import schema, service
-from fastapi import Form
+from fastapi import Form, Query
 
 router = APIRouter(prefix="/notification", tags=["Notification"])
 
 @router.get("", response_model=list[schema.NotificationOut])
 def list_notifications(
     db: Session = Depends(get_db),
-    user_id: UUID | None = None
+    clerk_id: str = Query(...)
 ):
-    return service.list_notifications(db, user_id)
+    return service.list_notifications(db, clerk_id)
 
 @router.get("/{notification_id}", response_model=schema.NotificationOut)
 def get_notification(notification_id: UUID, db: Session = Depends(get_db)):

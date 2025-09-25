@@ -2,11 +2,13 @@ from http.client import HTTPException
 from sqlalchemy.orm import Session
 from uuid import UUID
 from . import model, repo
+from src.modules.user.service import get_user_by_clerk_id
 
 from . import model, repo, schema
 
-def list_notifications(db: Session, user_id: UUID | None = None):
-    return repo.list_notifications(db, user_id)
+def list_notifications(db: Session, clerk_id: str | None = None):
+    user = get_user_by_clerk_id(db, clerk_id)
+    return repo.list_notifications(db, user.id)
 
 def get_notification_or_404(db: Session, notification_id: UUID):
     notif = repo.get_notification(db, notification_id)
