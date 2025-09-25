@@ -20,6 +20,7 @@ from src.modules.user.controller import router as user_router
 from src.modules.country.controller import router as country_router
 from src.modules.payment.controller import router as payment_router
 from src.modules.notification.controller import router as notification_router
+from src.modules.dashboard.controller import router as dashboard_router
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 
@@ -48,5 +49,5 @@ app.include_router(image_router, prefix="/api")
 app.include_router(country_router, prefix="/api")
 app.include_router(payment_router, prefix="/api")
 app.include_router(notification_router, prefix="/api")
-# app.include_router(image_router, prefix="/api")
+app.include_router(dashboard_router, prefix="/api")
 
