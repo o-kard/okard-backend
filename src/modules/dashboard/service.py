@@ -38,3 +38,15 @@ def get_post_progress(db: Session, clerk_id: str, limit: int = 20, offset: int =
             hit_goal=cur >= goal,
         ))
     return out
+
+def get_payment_stats(db: Session, clerk_id: str):
+    user = get_user_by_clerk_id(db, clerk_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return repo.list_payment_stats(db, user.id)
+
+def get_investor_country_stats(db: Session, clerk_id: str):
+    user = get_user_by_clerk_id(db, clerk_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return repo.list_investor_countries(db, user.id)

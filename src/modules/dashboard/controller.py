@@ -19,3 +19,18 @@ def user_posts_progress(
     db: Session = Depends(get_db),
 ):
     return service.get_post_progress(db, clerk_id, limit, offset)
+
+@router.get("/payments", response_model=list[schema.PaymentDailyStat])
+def user_payment_stats(
+    clerk_id: str = Query(...),
+    db: Session = Depends(get_db),
+):
+    return service.get_payment_stats(db, clerk_id)
+
+
+@router.get("/investors-by-country", response_model=list[schema.InvestorCountryStat])
+def investors_by_country(
+    clerk_id: str = Query(...),
+    db: Session = Depends(get_db),
+):
+    return service.get_investor_country_stats(db, clerk_id)
