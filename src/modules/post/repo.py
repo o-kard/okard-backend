@@ -4,6 +4,7 @@ from uuid import UUID
 from src.modules.campaign import model as camp_model
 from src.modules.image import model as image_model
 from src.modules.reward import model as reward_model
+from .model import Post
 
 def list_posts(db: Session):
     return (
@@ -52,3 +53,14 @@ def increment_current_amount(db: Session, post_id: UUID, delta: int):
         synchronize_session=False
     )
     db.commit()
+
+def update_post_prediction(db: Session, post_id: UUID, result: dict):
+    db.query(Post).filter(Post.id == post_id).update({
+        Post.success_label: result.get("success_cls", {}).get("label"),
+        Post.risk_label: result.get("risk_level", {}).get("label"),
+        Post.goal_eval_label: result.get("goal_eval", {}).get("label"),
+        Post.category_label: result.get("recommend_category", {}).get("label"),
+        Post.days_to_state_label: result.get("days_to_state_change", {}).get("label"),
+        Post.stretch_label: result.get("stretch_potential_cls", {}).get("label"),
+    })
+

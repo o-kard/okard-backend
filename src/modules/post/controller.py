@@ -7,6 +7,9 @@ from src.database.db import get_db
 from . import schema, service
 from src.modules.campaign import schema as camp_schema, service as camp_service
 from fastapi import Form 
+from src.modules.post import repo
+from src.modules.model.router import predict 
+from src.modules.model.schemas import InputData
 
 router = APIRouter(prefix="/post", tags=["Post"])
 
@@ -40,6 +43,7 @@ async def create(
     reward_images: Union[List[UploadFile], UploadFile, None] = File(None),     
     clerk_id: str = Query(...),
     db: Session = Depends(get_db),
+    predict_result: Optional[str] = Form(None),
 ):
     # print("post_images:", len(images or []))
     # print("create_campaigns:", len(campaigns or []), "camp_files:", len(campaign_images or []))
@@ -48,6 +52,21 @@ async def create(
         post_obj = schema.PostCreate(**json.loads(post_data))
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid post_data")
+
+    predict_data = {}
+    if predict_result:
+        try:
+            predict_data = json.loads(predict_result)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid predict_result JSON")
+
+    if predict_data:
+        post_obj.success_label = predict_data.get("success_cls", {}).get("label")
+        post_obj.risk_label = predict_data.get("risk_level", {}).get("label")
+        post_obj.days_to_state_label = predict_data.get("days_to_state_change", {}).get("label")
+        post_obj.category_label = predict_data.get("recommend_category", {}).get("label")
+        post_obj.goal_eval_label = predict_data.get("goal_eval", {}).get("label")
+        post_obj.stretch_label = predict_data.get("stretch_potential_cls", {}).get("label")
 
     post_img_list: Optional[List[UploadFile]] = None
     if images is not None:
@@ -166,3 +185,31 @@ async def update(
         post_images_manifest=img_manifest,           
         post_images_reorder=reorder_list, 
     )
+
+@router.post("/predict/{post_id}")
+async def predict_post(post_id: UUID, db: Session = Depends(get_db)):
+    post = repo.get_post_by_id(db, post_id)
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    # ✅ เตรียมข้อมูลจาก DB ให้ตรงกับ InputData ของ model
+    data = {
+        "goal": post.goal_amount,
+        "name": post.post_header,
+        "blurb": post.post_description,
+        "start_date": post.effective_start_from.isoformat() if post.effective_start_from else None,
+        "end_date": post.effective_end_date.isoformat() if post.effective_end_date else None,
+        "country_displayable_name": post.country_name,
+        "has_video": 0,
+        "has_photo": 1,
+    }
+
+    # ✅ เรียก predict() ที่คุณมีอยู่อีกไฟล์โดยตรง
+    result = await predict(InputData(**data))
+
+    # ✅ อัปเดตผลลัพธ์กลับ DB
+    repo.update_post_prediction(db, post_id, result)
+    db.commit()
+
+    return {"message": "Prediction completed", "result": result}
+

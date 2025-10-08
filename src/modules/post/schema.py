@@ -19,6 +19,13 @@ class PostBase(BaseModel):
     post_header: str
     post_description: Optional[str]
     supporter: int
+    
+    success_label: Optional[str] = None
+    risk_label: Optional[str] = None
+    days_to_state_label: Optional[str] = None
+    category_label: Optional[str] = None
+    goal_eval_label: Optional[str] = None
+    stretch_label: Optional[str] = None
 
 class PostCreate(PostBase):
     pass
