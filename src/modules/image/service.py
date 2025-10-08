@@ -86,14 +86,14 @@ async def _save_files_and_create_images(
     for file in files:
         content = await file.read()
         ext = os.path.splitext(file.filename)[1]
-        file_name = f"{uuid.uuid4().hex}{ext}"
+        file_name = f"{uuid4().hex}{ext}"
         file_path = UPLOAD_DIR / file_name
 
         with open(file_path, "wb") as f:
             f.write(content)
 
         image_kwargs = dict(
-            id=uuid.uuid4(),
+            id=uuid4(),
             orig_name=file.filename,
             media_type=file.content_type or "application/octet-stream",
             file_size=len(content),

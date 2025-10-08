@@ -3,6 +3,8 @@ import torch
 import torch.nn.functional as F
 from .model import model, preprocess
 from .schemas import InputData
+from .mapping import OUTPUT_MAPPINGS 
+from .model import label_encoders
 
 router = APIRouter(prefix="/predict", tags=["predict"])
 
@@ -10,20 +12,31 @@ router = APIRouter(prefix="/predict", tags=["predict"])
 async def predict(data: InputData):
     x_num, x_cat = preprocess(data)
 
+    # print("🔎 DEBUG")
+    # print("x_num.shape:", x_num.shape)
+    # print("x_cat.shape:", x_cat.shape)
+    # print("x_num mean/std:", float(x_num.mean()), float(x_num.std()))
+    # print("x_cat values:", x_cat.tolist())
+
     model.eval()
     with torch.no_grad():
-        outputs = model(x_num, x_cat)  # dict: head -> (1, k, C)
+        outputs = model(x_num, x_cat)
 
     results = {}
     for head, logits in outputs.items():
-        logits = torch.tensor(logits)  # (1, k, C)
-        probs = F.softmax(logits, dim=-1)          # convert to probabilities
-        probs_mean = probs.mean(dim=1)             # average across ensemble k
-        pred_class = torch.argmax(probs_mean, dim=-1).item()
+        print(f"{head} logits shape:", logits.shape)  # (1, k, C)
+
+        probs = F.softmax(logits, dim=-1)
+        probs_mean = probs.mean(dim=1)
+        pred_class = probs_mean.argmax(dim=-1).item()
+
+        label = OUTPUT_MAPPINGS.get(head, {}).get(pred_class, f"Unknown ({pred_class})")
 
         results[head] = {
-            "probs": probs_mean[0].tolist(),       # list of probabilities
-            "pred": pred_class                     # predicted class index
+            "pred": pred_class,
+            "label": label,
+            "confidence": float(probs_mean[0][pred_class]),
+            "probs": probs_mean[0].tolist(),
         }
 
     return results

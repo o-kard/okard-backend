@@ -99,19 +99,12 @@ class TabMMultiHead(nn.Module):
 
 
 # ===== helper สำหรับ backend =====
-def load_model(n_num_features, cat_cardinalities, head_dims, model_path, device="cpu"):
-    model = TabMMultiHead(
-        n_num_features=n_num_features,
-        cat_cardinalities=cat_cardinalities,
-        head_dims=head_dims,
-        k=14,
-        d_block=2048,
-        n_blocks=5,
-        dropout=0.3,
-        start_scaling_init="normal"
-    ).to(device)
+def load_model(model_path, device="cpu"):
+    checkpoint = torch.load(model_path, map_location=device)
+    config = checkpoint["config"]
 
-    state = torch.load(model_path, map_location=device)
-    model.load_state_dict(state)  
+    model = TabMMultiHead(**config).to(device)
+    model.load_state_dict(checkpoint["state_dict"])
     model.eval()
     return model
+
