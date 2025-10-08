@@ -38,7 +38,7 @@ class Post(Base):
     post_description = Column(String, nullable=True)
     supporter = Column(Integer, default=0)
 
-    images = relationship("Image", back_populates="post", cascade="all, delete")
+    images = relationship("Image", back_populates="post", cascade="all, delete", order_by="Image.order")
     campaigns = relationship("Campaign", back_populates="post", cascade="all, delete")
     rewards = relationship("Reward", back_populates="post", cascade="all, delete")
     comments = relationship("Comment", back_populates="post", cascade="all, delete-orphan")

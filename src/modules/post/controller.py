@@ -33,6 +33,7 @@ def delete(post_id: UUID,clerk_id: str = Query(...), db: Session = Depends(get_d
 async def create(
     post_data: str = Form(...),
     images: Union[List[UploadFile], UploadFile, None] = File(None),
+    images_manifest: Union[str, None] = Form(None),
     campaigns: Union[str, None] = Form(None),                                  
     campaign_images: Union[List[UploadFile], UploadFile, None] = File(None),
     rewards: Union[str, None] = Form(None),                     
@@ -83,10 +84,14 @@ async def create(
     if reward_list_raw is not None:
         if not reward_img_list or len(reward_img_list) != len(reward_list_raw):
             raise HTTPException(status_code=400, detail="reward_images must match rewards count (1:1).")
+        
+    post_img_list = images if isinstance(images, list) else ([images] if images else [])
+    manifest = json.loads(images_manifest) if images_manifest else []
 
     return await service.create_post(
         db=db, clerk_id=clerk_id, post_data=post_obj,
         post_images=post_img_list,
+        post_images_manifest=manifest,
         campaigns=camp_list_raw, campaign_images=camp_img_list,
         rewards=reward_list_raw, reward_images=reward_img_list,   
     )
@@ -102,6 +107,8 @@ async def update(
     reward_images: Union[List[UploadFile], UploadFile, None] = File(None),          
     clerk_id: str = Query(...),
     db: Session = Depends(get_db),
+    images_manifest: Union[str, None] = Form(None),         
+    images_reorder: Union[str, None] = Form(None),   
 ):
     # --- parse post_data ---
     post_upd = None
@@ -141,6 +148,10 @@ async def update(
             if not isinstance(it, dict) or "order" not in it: raise HTTPException(status_code=400, detail="Invalid rewards payload")
         reward_payload = parsed
 
+    post_img_list = images if isinstance(images, list) else ([images] if images else None)
+    img_manifest = json.loads(images_manifest) if images_manifest else None
+    reorder_list = json.loads(images_reorder) if images_reorder else None
+
     # --- call service ---
     return await service.update_post(
         db=db,
@@ -152,4 +163,6 @@ async def update(
         campaign_images=camp_img_list,
         rewards_payload=reward_payload,  
         reward_images=reward_img_list,
+        post_images_manifest=img_manifest,           
+        post_images_reorder=reorder_list, 
     )

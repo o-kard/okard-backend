@@ -8,8 +8,7 @@ class Image(Base):
     __tablename__ = "image"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    order = Column(Integer)
-    post_id = Column(UUID(as_uuid=True), ForeignKey("post.id"))
+    order = Column(Integer, nullable=False, default=1)
     user_id = Column(UUID(as_uuid=True), ForeignKey("user.id"))
     post_id = Column(UUID(as_uuid=True), ForeignKey("post.id"), nullable=True)
     campaign_id = Column(UUID(as_uuid=True), ForeignKey("campaign.id"), nullable=True)

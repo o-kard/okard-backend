@@ -10,6 +10,10 @@ from src.modules.contributor import service as contributor_service
 from src.modules.reward import service as reward_service
 from src.modules.post import repo as post_repo
 
+from src.modules.notification import service as notification_service
+from src.modules.notification import schema as notification_schema
+from src.modules.notification.model import NotificationType
+
 def list_payments(db: Session) -> List[model.Payment]:
     return repo.list_payments(db)
 
@@ -25,6 +29,14 @@ def create_payment(db: Session, clerk_id: str, data: schema.PaymentCreate) -> mo
         raise HTTPException(status_code=404, detail="User not found")
 
     payload = schema.PaymentCreate(**data.model_dump(), user_id=user.id)
+
+    post = post_repo.get_post(db, payload.post_id)
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    
+    prev_amount = post.current_amount 
+    print(prev_amount)
+    goal_amount = post.goal_amount 
 
     db_payment = repo.create_payment(db, payload)
 
@@ -42,6 +54,21 @@ def create_payment(db: Session, clerk_id: str, data: schema.PaymentCreate) -> mo
     )
 
     reward_service.calculate_backup_amounts_for_post(db=db, post_id=payload.post_id)
+
+    new_amount = prev_amount + payload.amount
+
+    if goal_amount and prev_amount < goal_amount <= new_amount:
+        notif = notification_schema.NotificationCreate(
+            user_id=post.user_id,             
+            actor_id=user.id,                
+            post_id=post.id,
+            notification_title="🎉 Goal reached!",
+            notification_message=(
+                f"Your post \"{post.post_header}\" has reached its goal of {goal_amount}."
+            ),
+            type=NotificationType.goal,
+        )
+        notification_service.create_notification(db, notif)
 
     return db_payment
 
