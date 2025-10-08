@@ -8,8 +8,8 @@ from . import schema, service
 from src.modules.campaign import schema as camp_schema, service as camp_service
 from fastapi import Form 
 from src.modules.post import repo
-from src.modules.model.router import predict 
-from src.modules.model.schemas import InputData
+from src.modules.model import controller as predict_controller
+from src.modules.model.schema import InputData
 
 router = APIRouter(prefix="/post", tags=["Post"])
 
@@ -205,7 +205,7 @@ async def predict_post(post_id: UUID, db: Session = Depends(get_db)):
     }
 
     # ✅ เรียก predict() ที่คุณมีอยู่อีกไฟล์โดยตรง
-    result = await predict(InputData(**data))
+    result = await predict_controller.predict(InputData(**data))
 
     # ✅ อัปเดตผลลัพธ์กลับ DB
     repo.update_post_prediction(db, post_id, result)

@@ -42,10 +42,7 @@ class Post(Base):
     campaigns = relationship("Campaign", back_populates="post", cascade="all, delete")
     rewards = relationship("Reward", back_populates="post", cascade="all, delete")
     comments = relationship("Comment", back_populates="post", cascade="all, delete-orphan")
+    models = relationship("Model", back_populates="post", cascade="all, delete")
+
     
-    success_label = Column(String, nullable=True)
-    risk_label = Column(String, nullable=True)
-    days_to_state_label = Column(String, nullable=True)
-    category_label = Column(String, nullable=True)
-    goal_eval_label = Column(String, nullable=True)
-    stretch_label = Column(String, nullable=True)
+    
