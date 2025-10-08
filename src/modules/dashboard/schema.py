@@ -26,3 +26,10 @@ class InvestorCountryStat(BaseModel):
     country: str
     invest_count: int
 
+class TrendingPost(BaseModel):
+    post_id: UUID
+    post_header: str
+    payment_count: int
+
+    class Config:
+        orm_mode = True

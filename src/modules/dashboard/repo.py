@@ -1,9 +1,8 @@
 from __future__ import annotations
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import date, datetime, timedelta, timezone
 from uuid import UUID
 
-from sqlalchemy import Date, cast, select, func, distinct
+from sqlalchemy import Date, cast, desc, select, func, distinct
 from sqlalchemy.orm import Session
 
 from src.modules.post import model as post_model
@@ -100,3 +99,19 @@ def list_investor_countries(db: Session, user_id: UUID):
         .group_by(country_model.Country.name)
     )
     return db.execute(stmt).all()
+
+def get_trending_posts(db: Session, day: date, user_id: UUID,limit: int = 5):
+    return (
+        db.query(
+            post_model.Post.id.label("post_id"),
+            post_model.Post.post_header,
+            func.count(payment_model.id).label("donate_count")
+        )
+        .join(payment_model, payment_model.Payment.post_id == post_model.Post.id)
+        .filter(post_model.Post.user_id == user_id)
+        .filter(cast(payment_model.Payment.created_at, Date) == day)
+        .group_by(post_model.Post.id)
+        .order_by(desc("donate_count"))
+        .limit(limit)
+        .all()
+    )

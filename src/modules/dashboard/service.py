@@ -1,3 +1,4 @@
+from datetime import date
 from uuid import UUID
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
@@ -50,3 +51,9 @@ def get_investor_country_stats(db: Session, clerk_id: str):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return repo.list_investor_countries(db, user.id)
+
+def list_trending_posts(db, day: date, clerk_id: str):
+    user = get_user_by_clerk_id(db, clerk_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return repo.get_trending_posts(db, day, user.id)

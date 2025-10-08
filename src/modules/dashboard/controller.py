@@ -1,3 +1,4 @@
+from datetime import date
 from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
@@ -34,3 +35,11 @@ def investors_by_country(
     db: Session = Depends(get_db),
 ):
     return service.get_investor_country_stats(db, clerk_id)
+
+@router.get("/posts/trending", response_model=list[schema.TrendingPost])
+def get_trending_posts(
+    day: date = date.today(),
+    db: Session = Depends(get_db),
+    clerk_id: str = Query(...)
+):
+    return service.list_trending_posts(db, day, clerk_id)
