@@ -255,12 +255,12 @@ async def update_post(
         to_create_items = [it for it in rewards_payload if not it.get("id") or str(it["id"]) not in existing_ids]
 
         # delete
-        for cid in to_delete_ids:
-            await reward_service.delete_reward(db=db, reward_id=UUID(cid))
+        for rid in to_delete_ids:
+            await reward_service.delete_reward(db=db, reward_id=UUID(rid))
 
         # update 
         for it in to_update_items:
-            cid = UUID(it["id"])
+            rid = UUID(it["id"])
             payload = {k: v for k, v in it.items() if k not in ["id", "isEdited"]}
             upd_obj = reward_schema.RewardUpdate(**payload)
 
@@ -271,7 +271,7 @@ async def update_post(
                 file = imgs[ptr]; ptr += 1
 
             await reward_service.update_reward_with_images(
-                db=db, reward_id=cid, reward_data=upd_obj, files=([file] if file else None)
+                db=db, reward_id=rid, reward_data=upd_obj, files=([file] if file else None)
             )
 
         # create 
