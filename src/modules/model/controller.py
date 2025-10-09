@@ -1,3 +1,5 @@
+from typing import Optional
+from uuid import UUID
 from clerk_backend_api import Session
 from fastapi import APIRouter, Depends
 from src.database.db import get_db
@@ -8,6 +10,6 @@ from . import model, schema, service
 router = APIRouter(prefix="/predict", tags=["predict"])
 
 @router.post("/")
-async def predict(data: schema.InputData, db: Session = Depends(get_db)):
-    results = await service.predict(db, data)
+async def predict(data: schema.InputData,post_id: Optional[UUID] = None, db: Session = Depends(get_db)):
+    results = await service.predict(db, post_id, data)
     return results
