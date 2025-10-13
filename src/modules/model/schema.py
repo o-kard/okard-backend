@@ -11,6 +11,7 @@ class InputData(BaseModel):
     country_displayable_name: str
     has_video: int
     has_photo: int
+    # current_amount: float
 
 class PredictionResult(BaseModel):
     post_id: Optional[str] = None

@@ -9,6 +9,7 @@ from . import repo, schema, model
 from src.modules.image import model as image_model, repo as image_repo, service as image_service
 from src.modules.campaign import schema as campaign_schema, service as campaign_service
 from src.modules.reward import schema as reward_schema, service as reward_service
+from src.modules.model import service as model_service, schema as model_schema, repo as model_repo
 from pathlib import Path
 from src.modules.user.repo import get_user_by_clerk_id 
 import os
@@ -104,6 +105,7 @@ async def create_post(
     campaign_images: Optional[List[UploadFile]] = None,
     rewards: Optional[List[dict]] = None,
     reward_images: Optional[List[UploadFile]] = None,
+    predict_result_data: Optional[dict] = None,
 ):
     user = get_user_by_clerk_id(db, clerk_id)
     if not user:
@@ -111,6 +113,15 @@ async def create_post(
 
     # 1) create post
     db_post = repo.create_post_by_user(db, user_id=user.id, data=post_data)
+
+    print("predict_result_data:", predict_result_data)
+
+    if predict_result_data:
+        model_repo.save_prediction_results( 
+            db=db,
+            post_id=db_post.id, 
+            results=predict_result_data
+        )
 
     # 2) post images
     await image_service._save_files_and_create_images(
@@ -157,7 +168,7 @@ async def update_post(
     rewards_payload: Optional[List[dict]] = None,
     reward_images: Optional[List[UploadFile]] = None,
     post_images_manifest: Optional[list[dict]] = None,
-    post_images_reorder: Optional[list[dict]] = None, 
+    post_images_reorder: Optional[list[dict]] = None,
 ):
     db_post = verify_post_owner(db, post_id, clerk_id)
 
