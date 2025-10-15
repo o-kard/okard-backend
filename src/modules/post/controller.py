@@ -43,7 +43,6 @@ async def create(
     reward_images: Union[List[UploadFile], UploadFile, None] = File(None),     
     clerk_id: str = Query(...),
     db: Session = Depends(get_db),
-    predict_result: Optional[str] = Form(None),
 ):
     # print("post_images:", len(images or []))
     # print("create_campaigns:", len(campaigns or []), "camp_files:", len(campaign_images or []))
@@ -52,8 +51,6 @@ async def create(
         post_obj = schema.PostCreate(**json.loads(post_data))
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid post_data")
-
-    predict_data = json.loads(predict_result) if predict_result else None
 
     post_img_list: Optional[List[UploadFile]] = None
     if images is not None:
@@ -94,7 +91,6 @@ async def create(
     post_img_list = images if isinstance(images, list) else ([images] if images else [])
     manifest = json.loads(images_manifest) if images_manifest else []
 
-    print("predict_data:", predict_data)
 
     return await service.create_post(
         db=db, clerk_id=clerk_id, post_data=post_obj,
@@ -102,7 +98,6 @@ async def create(
         post_images_manifest=manifest,
         campaigns=camp_list_raw, campaign_images=camp_img_list,
         rewards=reward_list_raw, reward_images=reward_img_list,
-        predict_result_data=predict_data   
     )
 
 @router.put("/{post_id}/with-campaigns", response_model=schema.PostOut)
