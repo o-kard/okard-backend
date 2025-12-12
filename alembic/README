@@ -1,0 +1,117 @@
+📦 Database Setup (Alembic + SQLAlchemy)
+
+โปรเจกต์นี้ใช้ Alembic สำหรับจัดการ database schema migration
+โดยใช้แนวคิด Baseline Migration (สำหรับ DB ที่มี schema อยู่แล้ว)
+
+⚠️ โปรดอ่านให้ครบก่อนรันคำสั่งใด ๆ
+
+🧠 Migration Strategy (สำคัญ)
+
+Migration แบ่งเป็น 2 ประเภท:
+
+Baseline init migration
+
+ใช้กับ database ที่มี schema อยู่แล้ว
+
+❌ ไม่ได้ออกแบบมาให้สร้าง database จากศูนย์
+
+ใช้ alembic stamp
+
+Incremental migrations
+
+ใช้เมื่อมีการแก้ไข SQLAlchemy models
+
+ใช้ alembic revision --autogenerate + alembic upgrade
+
+👤 Case 1: คุณมี Database อยู่แล้ว (มี table / data)
+
+ใช้กรณีนี้ถ้าคุณเคยรัน backend มาก่อน หรือมีข้อมูลอยู่แล้ว
+
+ขั้นตอน
+# 1) Pull code ล่าสุด
+git pull origin main
+
+# 2) Activate virtual environment
+source .venv/bin/activate
+
+# 3) Sync Alembic state กับ DB ปัจจุบัน
+alembic stamp head
+
+
+✔ ไม่มี SQL ถูกรัน
+✔ ไม่มีข้อมูลหาย
+✔ Alembic จะถือว่า DB อยู่ที่ schema ล่าสุดแล้ว
+
+ตรวจสอบได้ด้วย:
+
+alembic current
+
+👤 Case 2: คุณยังไม่มี Database เลย (Fresh machine)
+
+⚠️ ห้ามรัน alembic upgrade head กับ baseline migration
+
+วิธีที่แนะนำ (เลือกอย่างใดอย่างหนึ่ง)
+🟢 วิธี A: ใช้ schema dump (ง่าย / แนะนำสำหรับ dev)
+
+ผู้ดูแลโปรเจกต์จะเตรียมไฟล์ schema.sql
+
+createdb mydb
+psql mydb < schema.sql
+alembic stamp head
+
+🟢 วิธี B: ใช้ init-create migration (เหมาะกับ prod / ระยะยาว)
+
+จะมี migration แยกต่างหากสำหรับสร้าง schema จากศูนย์:
+
+alembic upgrade head
+
+
+migration นี้จะมี create_table(...) ครบทุก table
+
+🔁 เมื่อมีการอัปเดต Model ต้องทำยังไง?
+🧩 ขั้นตอนมาตรฐาน (ทุกครั้งที่แก้ model)
+
+แก้ SQLAlchemy model
+
+ตรวจสอบว่า model ถูก import ใน database/models.py
+
+สร้าง migration ใหม่
+
+alembic revision --autogenerate -m "describe your change"
+
+
+ตรวจไฟล์ migration ที่ได้
+
+✔ upgrade() ต้องตรงกับสิ่งที่แก้
+
+❌ อย่ามี drop_table โดยไม่ตั้งใจ
+
+รัน migration
+
+alembic upgrade head
+
+
+Commit
+
+git add alembic/versions
+git commit -m "db: describe your schema change"
+
+⚠️ ข้อห้ามสำคัญ
+
+❌ ห้ามแก้ alembic/versions/*.py ที่เคย merge แล้ว
+
+❌ ห้ามใช้ Base.metadata.create_all() หลังเริ่มใช้ Alembic
+
+❌ ห้ามรัน alembic upgrade head กับ baseline migration
+
+❌ ห้ามลบ alembic_version ใน production
+
+📌 Summary
+
+มี DB อยู่แล้ว → alembic stamp head
+
+แก้ model → revision --autogenerate → upgrade
+
+DB ใหม่ → ใช้ schema.sql หรือ init-create migration
+
+Baseline migration → ใช้ sync state เท่านั้น
