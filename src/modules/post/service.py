@@ -99,6 +99,7 @@ async def create_post(
     clerk_id: str,
     post_data: schema.PostCreate,
     post_images: Optional[List[UploadFile]] = None,
+    post_images_manifest: Optional[list[dict]] = None,
     campaigns: Optional[List[dict]] = None, 
     campaign_images: Optional[List[UploadFile]] = None,
     rewards: Optional[List[dict]] = None,
@@ -112,7 +113,10 @@ async def create_post(
     db_post = repo.create_post_by_user(db, user_id=user.id, data=post_data)
 
     # 2) post images
-    await image_service._save_files_and_create_images(db, db_post.id, post_images, parent_type="post")
+    await image_service._save_files_and_create_images(
+        db, parent_type="post", parent_id=db_post.id,
+        files=post_images or [], images_manifest=post_images_manifest or []
+    )
 
     # 3) campaigns
     if campaigns:
@@ -152,6 +156,8 @@ async def update_post(
     campaign_images: Optional[List[UploadFile]] = None,
     rewards_payload: Optional[List[dict]] = None,
     reward_images: Optional[List[UploadFile]] = None,
+    post_images_manifest: Optional[list[dict]] = None,
+    post_images_reorder: Optional[list[dict]] = None, 
 ):
     db_post = verify_post_owner(db, post_id, clerk_id)
 
@@ -168,7 +174,25 @@ async def update_post(
                     os.remove(ap)
             db.delete(image)
         db.commit()
-        await image_service._save_files_and_create_images(db, db_post.id, post_images, parent_type="post")
+
+        await image_service._save_files_and_create_images(
+            db,
+            parent_type="post",
+            parent_id=db_post.id,
+            files=post_images or [],
+            images_manifest=post_images_manifest or [],   
+        )
+
+    elif post_images_reorder:
+        id_to_order = {UUID(str(it["id"])): int(it["order"]) for it in post_images_reorder}
+        current = {img.id: img for img in db_post.images}
+        unknown = [str(i) for i in id_to_order.keys() if i not in current]
+        if unknown:
+            raise HTTPException(status_code=400, detail=f"Unknown image ids: {unknown}")
+
+        for img_id, ord_ in id_to_order.items():
+            current[img_id].order = ord_
+        db.commit()
 
     # --- campaigns ---
     if campaigns_payload is not None:

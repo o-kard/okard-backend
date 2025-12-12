@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Integer, BigInteger, Enum, ForeignKey, DateTime
+from sqlalchemy import Column, String, Integer, BigInteger, Enum, ForeignKey, DateTime, Float
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from src.database.db import Base
@@ -38,6 +38,14 @@ class Post(Base):
     post_description = Column(String, nullable=True)
     supporter = Column(Integer, default=0)
 
-    images = relationship("Image", back_populates="post", cascade="all, delete")
+    images = relationship("Image", back_populates="post", cascade="all, delete", order_by="Image.order")
     campaigns = relationship("Campaign", back_populates="post", cascade="all, delete")
     rewards = relationship("Reward", back_populates="post", cascade="all, delete")
+    comments = relationship("Comment", back_populates="post", cascade="all, delete-orphan")
+    
+    success_label = Column(String, nullable=True)
+    risk_label = Column(String, nullable=True)
+    days_to_state_label = Column(String, nullable=True)
+    category_label = Column(String, nullable=True)
+    goal_eval_label = Column(String, nullable=True)
+    stretch_label = Column(String, nullable=True)

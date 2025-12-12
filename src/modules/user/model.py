@@ -26,3 +26,4 @@ class User(Base):
     
     image = relationship("Image", back_populates="user", cascade="all, delete-orphan", uselist=False, single_parent=True)
     country = relationship("Country", back_populates="users")
+    comments = relationship("Comment", back_populates="author", cascade="all, delete-orphan")

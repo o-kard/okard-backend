@@ -47,7 +47,13 @@ async def create_reward_with_images(
         db.commit()
         db.refresh(db_reward)
 
-        await image_service._save_files_and_create_images(db, db_reward.id, files, parent_type="reward")
+        await image_service._save_files_and_create_images(
+            db,
+            parent_type="reward",
+            parent_id=db_reward.id,
+            files=files,                       
+            images_manifest=None,              
+        )
 
         db_rewards.append(db_reward)
 
