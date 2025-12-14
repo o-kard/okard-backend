@@ -26,6 +26,9 @@ from src.modules.model.controller import router as predict_router
 
 from src.modules.notification.controller import router as notification_router
 from src.modules.dashboard.controller import router as dashboard_router
+
+from src.modules.search.controller import router as search_router
+
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 
@@ -59,4 +62,4 @@ app.include_router(comment_router, prefix="/api")
 app.include_router(predict_router, prefix="/api")
 app.include_router(notification_router, prefix="/api")
 app.include_router(dashboard_router, prefix="/api")
-
+app.include_router(search_router, prefix="/api")
