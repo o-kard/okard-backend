@@ -64,15 +64,21 @@ async def update_campaign_with_images(db: Session, campaign_id: UUID,
     if not files:
         return db_campaign
 
-    for image in list(db_campaign.image):
+    for image in list(db_campaign.images):
         if image.path:
             ap = _abs(image.path)
             if os.path.exists(ap):
                 os.remove(ap)
-        db.delete(image)
+        image_repo.delete_image(db, image)
     db.commit()
 
-    await image_service._save_files_and_create_images(db, db_campaign.id, files, parent_type="campaign")
+    await image_service._save_files_and_create_images(
+        db,
+        parent_type="campaign",
+        parent_id=db_campaign.id,
+        files=files,
+        images_manifest=None
+    )
 
     return db_campaign
 
@@ -81,10 +87,11 @@ async def update_campaign_with_images(db: Session, campaign_id: UUID,
 def delete_campaign(db: Session, campaign_id: UUID):
     db_campaign = get_campaign(db, campaign_id)
     
-    for image in list(db_campaign.image):
+    for image in list(db_campaign.images):
         if image.path:
             ap = _abs(image.path)
             if os.path.exists(ap):
                 os.remove(ap)
+        image_repo.delete_image(db, image)
 
     return repo.delete_campaign(db, db_campaign)

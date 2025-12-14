@@ -87,20 +87,23 @@ def delete_post(db: Session, post_id: UUID):
             ap = _abs(image.path)
             if os.path.exists(ap):
                 os.remove(ap)
+        image_repo.delete_image(db, image)
 
     for camp in list(db_post.campaigns):
-        for image in list(camp.image):
+        for image in list(camp.images):
             if image.path:
                 ap = _abs(image.path)
                 if os.path.exists(ap):
                     os.remove(ap)
+            image_repo.delete_image(db, image)
     
     for reward in list(db_post.rewards):
-        for image in list(reward.image):
+        for image in list(reward.images):
             if image.path:
                 ap = _abs(image.path)
                 if os.path.exists(ap):
                     os.remove(ap)
+            image_repo.delete_image(db, image)
 
     return repo.delete_post(db, db_post)
 
@@ -192,34 +195,53 @@ async def update_post(
     if post_data:
         repo.update_post(db, db_post, post_data)
 
-    # 2) post images: BULK REPLACE
-    if post_images is not None:
-        for image in list(db_post.images):
-            if image.path:
-                ap = _abs(image.path)
-                if os.path.exists(ap):
-                    os.remove(ap)
-            db.delete(image)
+    # 2) Manage Images
+    # Strategy: 
+    # - post_images_reorder: Contains IDs of EXISTING images to keep & their new order. 
+    #   Implicitly, any existing image NOT in this list will be DELETED.
+    # - post_images: New files to ADD.
+
+    # A. Handle Existing Images (Reorder + Delete)
+    if post_images_reorder is not None:
+        # 1. Parse payload
+        id_to_order = {UUID(str(it["id"])): int(it["display_order"]) for it in post_images_reorder}
+        
+        # 2. Identify current images in DB
+        current_images = {img.id: img for img in db_post.images}
+        
+        # 3. Update Order for kept images
+        for img_id, order in id_to_order.items():
+            if img_id in current_images:
+                current_images[img_id].display_order = order
+        
+        # 4. Delete missing images (Existing in DB but NOT in reorder list)
+        # Note: We only delete images that are NOT in the reorder list.
+        # This allows the frontend to spec 'keep these'. 
+        kept_ids = set(id_to_order.keys())
+        for img_id, img in current_images.items():
+            if img_id not in kept_ids:
+                # Delete physical file
+                if img.path:
+                    ap = _abs(img.path)
+                    try:
+                        if os.path.exists(ap):
+                            os.remove(ap)
+                    except Exception as e:
+                        print(f"Error deleting file {ap}: {e}")
+                # Delete from DB
+                image_repo.delete_image(db, img)
+        
         db.commit()
 
+    # B. Add New Images
+    if post_images:
         await image_service._save_files_and_create_images(
             db,
             parent_type="post",
             parent_id=db_post.id,
-            files=post_images or [],
+            files=post_images, # already a list or None
             images_manifest=post_images_manifest or [],   
         )
-
-    elif post_images_reorder:
-        id_to_order = {UUID(str(it["id"])): int(it["order"]) for it in post_images_reorder}
-        current = {img.id: img for img in db_post.images}
-        unknown = [str(i) for i in id_to_order.keys() if i not in current]
-        if unknown:
-            raise HTTPException(status_code=400, detail=f"Unknown image ids: {unknown}")
-
-        for img_id, ord_ in id_to_order.items():
-            current[img_id].order = ord_
-        db.commit()
 
     # --- campaigns ---
     if campaigns_payload is not None:

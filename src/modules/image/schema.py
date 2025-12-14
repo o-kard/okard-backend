@@ -3,12 +3,10 @@ from uuid import UUID
 from typing import Optional
 
 class ImageBase(BaseModel):
-    order: Optional[int] = None
-    post_id: Optional[UUID] = None  # Optional for post association
-    user_id: Optional[UUID] = None  # Optional for user association
-    orig_name: str
-    media_type: str
-    file_size: int
+    display_order: Optional[int] = None
+    orig_name: Optional[str] = None
+    media_type: Optional[str] = None
+    file_size: Optional[int] = None
 
 class ImageCreate(ImageBase):
     pass
@@ -18,8 +16,6 @@ class ImageUpdate(ImageBase):
 
 class ImageOut(ImageBase):
     id: UUID
-    post_id: Optional[UUID] = None
-    campaign_id: Optional[UUID] = None
     path: str
 
     class Config:

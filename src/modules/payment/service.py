@@ -12,7 +12,7 @@ from src.modules.post import repo as post_repo
 
 from src.modules.notification import service as notification_service
 from src.modules.notification import schema as notification_schema
-from src.modules.notification.model import NotificationType
+from src.modules.common.enums import NotificationType
 
 def list_payments(db: Session) -> List[model.Payment]:
     return repo.list_payments(db)

@@ -1,5 +1,4 @@
-# modules/user/model.py
-from sqlalchemy import Column, String, Date, Integer, ForeignKey
+from sqlalchemy import Column, String, Date, Integer, ForeignKey, and_
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from uuid import uuid4
@@ -12,7 +11,7 @@ class User(Base):
     clerk_id = Column(String, nullable=False, unique=True)
     username = Column(String, nullable=False, unique=True)
     email = Column(String, nullable=True, unique=True)
-    password = Column(String, nullable=True)
+    # password removed as per schema request (Clerk auth)
     first_name = Column(String)
     middle_name = Column(String)
     surname = Column(String)
@@ -25,7 +24,14 @@ class User(Base):
     contribution_number = Column(Integer, default=0)
     
     posts = relationship("Post", back_populates="user")
-    image = relationship("Image", back_populates="user", cascade="all, delete-orphan", uselist=False, single_parent=True)
+
+    image = relationship(
+        "Image",
+        secondary="imageHandler",
+        primaryjoin="and_(User.id==ImageHandler.reference_id, ImageHandler.type=='user')",
+        secondaryjoin="ImageHandler.image_id==Image.id",
+        uselist=False,
+        viewonly=True,
+    )
     country = relationship("Country", back_populates="users")
     comments = relationship("Comment", back_populates="author", cascade="all, delete-orphan")
-    

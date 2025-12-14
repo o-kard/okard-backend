@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Optional, List
 
 from src.modules.reward.schema import RewardOut
-from .model import PostState, PostStatus, PostCategory
+from src.modules.common.enums import PostState, PostStatus, PostCategory
 from src.modules.image.schema import ImageOut
 from src.modules.campaign.schema import CampaignOut
 from src.modules.user.schema import UserPublicResponse
@@ -15,11 +15,11 @@ class PostBase(BaseModel):
     state: Optional[PostState]
     status: Optional[PostStatus]
     category: Optional[PostCategory]
-    goal_amount: int
-    current_amount: int
+    goal_amount: Optional[int] = 0
+    current_amount: Optional[int] = 0
     post_header: str
-    post_description: Optional[str]
-    supporter: int
+    post_description: Optional[str] = None
+    supporter: Optional[int] = 0
 
 class PostCreate(PostBase):
     pass

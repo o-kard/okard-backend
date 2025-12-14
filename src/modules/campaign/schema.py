@@ -7,7 +7,7 @@ from src.modules.image.schema import ImageOut
 class CampaignBase(BaseModel):
     campaign_header: Optional[str] = None    
     campaign_description: Optional[str] = None 
-    order: int
+    display_order: Optional[int] = 0
 
 class CampaignCreate(CampaignBase):
     post_id: UUID
@@ -18,6 +18,6 @@ class CampaignUpdate(CampaignBase):
 class CampaignOut(CampaignBase):
     id: UUID
     created_at: datetime
-    image: List[ImageOut] = []              
+    images: List[ImageOut] = []              
     class Config:
         orm_mode = True

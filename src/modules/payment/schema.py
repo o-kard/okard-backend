@@ -3,7 +3,7 @@ from uuid import UUID
 from datetime import datetime
 from typing import Optional
 
-from .model import PaymentMethod
+from src.modules.common.enums import PaymentMethod
 
 class PaymentBase(BaseModel):
     amount: int

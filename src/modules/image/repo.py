@@ -15,6 +15,7 @@ def create_image(db: Session, image: model.Image):
     return image
 
 def delete_image(db: Session, db_image: model.Image):
+    db.query(model.ImageHandler).filter(model.ImageHandler.image_id == db_image.id).delete()
     db.delete(db_image)
     db.commit()
     return db_image

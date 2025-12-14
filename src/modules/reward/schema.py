@@ -7,7 +7,7 @@ from src.modules.image.schema import ImageOut
 class RewardBase(BaseModel):
     reward_header: Optional[str] = None    
     reward_description: Optional[str] = None 
-    order: int
+    display_order: Optional[int] = 0
     reward_amount: int
     backup_amount: int
 
@@ -20,6 +20,6 @@ class RewardUpdate(RewardBase):
 class RewardOut(RewardBase):
     id: UUID
     created_at: datetime
-    image: List[ImageOut] = []              
+    images: List[ImageOut] = []              
     class Config:
         orm_mode = True

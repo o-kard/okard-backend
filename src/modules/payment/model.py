@@ -1,18 +1,10 @@
 from datetime import datetime, timezone
-import enum
 import uuid
 from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, Enum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from src.database.db import Base
-
-
-class PaymentMethod(str, enum.Enum):
-    promtpay = "promptpay"
-    card = "card"
-    true_money_wallet = "true_money_wallet"
-    pay_by_bank = "pay_by_bank"
-
+from src.modules.common.enums import PaymentMethod
 
 class Payment(Base):
     __tablename__ = "payment"

@@ -10,6 +10,7 @@ from src.modules.user.service import get_user_by_clerk_id
 from . import model, repo
 from fastapi import UploadFile
 from typing import Optional
+from src.modules.common.enums import ReferenceType
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 
@@ -22,6 +23,9 @@ async def create_image_from_upload(
     post_id: Optional[UUID] = None,
     clerk_id: Optional[str] = None,
 ):
+    ref_id = None
+    ref_type = None
+
     if clerk_id:
         user = get_user_by_clerk_id(db, clerk_id)
         if not user:
@@ -29,19 +33,33 @@ async def create_image_from_upload(
         user_id = user.id
         print(f"User found: {user_id}")
         
+        # Check existing image via handler
+        # Assuming user has 'image' relationship working
         if user.image:
-            old_path = user.image.path
-            # ลบไฟล์เก่า
-            if old_path:
-                abs_old_path = BASE_DIR / old_path.lstrip("/")
-                try:
-                    if abs_old_path.exists():
-                        abs_old_path.unlink()
-                except Exception:
-                    pass
-            repo.delete_image(db, user.image)
+           old_path = user.image.path
+           if old_path:
+               abs_old_path = BASE_DIR / old_path.lstrip("/")
+               try:
+                   if abs_old_path.exists():
+                       abs_old_path.unlink()
+               except Exception:
+                   pass
+           # We need to delete the Image object. Cascade should handle handler?
+           # If cascade is not set on handler FK, we might need to delete handler manually or rely on image deletion cascading to handler?
+           # ImageHandler has FK to Image. If we delete Image, handler should be deleted?
+           # Wait, check DB definition: creating FK... ondelete is default (No Action).
+           # So deleting Image might fail if Handler exists! 
+           # We should delete handler first or Image.
+           # Actually, usually getting the image object and deleting it requires cleaning dependencies.
+           repo.delete_image(db, user.image)
+
+        ref_id = user.id
+        ref_type = ReferenceType.user
             
-    if not post_id and not clerk_id:
+    elif post_id:
+        ref_id = post_id
+        ref_type = ReferenceType.post
+    else:
         raise ValueError("Either post_id or user_id is required")
     
     content = await file.read()
@@ -52,16 +70,27 @@ async def create_image_from_upload(
     with open(file_path, "wb") as f:
         f.write(content)
 
+    img_id = uuid4()
     db_image = model.Image(
-        id=uuid4(),
-        post_id=post_id,
-        user_id=user_id,
+        id=img_id,
         orig_name=file.filename,
         media_type=file.content_type,
         file_size=len(content),
-        path=f"/uploads/images/{file_name}", 
+        path=f"/uploads/images/{file_name}",
+        display_order=0 
     )
-    return repo.create_image(db, db_image)
+    repo.create_image(db, db_image)
+
+    # Create handler
+    handler = model.ImageHandler(
+        image_id=img_id,
+        reference_id=ref_id,
+        type=ref_type
+    )
+    db.add(handler)
+    db.commit()
+
+    return db_image
 
 def list_images(db: Session):
     return repo.list_images(db)
@@ -91,7 +120,7 @@ async def _save_files_and_create_images(
         for it in images_manifest:
             fn = (it.get("filename") or "").strip()
             if fn:
-                order_map[fn] = int(it.get("order") or start_index)
+                order_map[fn] = int(it.get("display_order") or start_index)
 
     for i, file in enumerate(files, start=start_index):
         content = await file.read()
@@ -103,27 +132,38 @@ async def _save_files_and_create_images(
             f.write(content)
 
         img_order = order_map.get(file.filename, i)
+        img_id = uuid4()
 
         image_kwargs = dict(
-            id=uuid4(),
+            id=img_id,
             orig_name=file.filename,
             media_type=file.content_type or "application/octet-stream",
             file_size=len(content),
             path=f"/uploads/images/{file_name}",
-            order=img_order,  
+            display_order=img_order,  
         )
 
+        ref_type = None
         if parent_type == "reward":
-            image_kwargs["reward_id"] = parent_id
+            ref_type = ReferenceType.reward
         elif parent_type == "post":
-            image_kwargs["post_id"] = parent_id
+            ref_type = ReferenceType.post
         elif parent_type == "campaign":
-            image_kwargs["campaign_id"] = parent_id
+            ref_type = ReferenceType.campaign
         else:
             raise ValueError(f"Unknown parent_type: {parent_type}")
 
         image = model.Image(**image_kwargs)
         repo.create_image(db, image)
-        saved_images.append(image)
 
+        handler = model.ImageHandler(
+            image_id=img_id,
+            reference_id=parent_id,
+            type=ref_type
+        )
+        db.add(handler)
+        
+        saved_images.append(image)
+    
+    db.commit()
     return saved_images

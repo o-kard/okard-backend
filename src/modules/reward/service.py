@@ -6,7 +6,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 from uuid import UUID
 from . import repo, schema, model
-from src.modules.image import  service as image_service
+from src.modules.image import  service as image_service, repo as image_repo
 from src.modules.contributor import model as contributor_model
 from pathlib import Path
 import os
@@ -70,16 +70,22 @@ async def update_reward_with_images(
     if not files:
         return db_reward
 
-    for image in list(db_reward.image):
+    for image in list(db_reward.images):
         if image.path:
             ap = _abs(image.path)
             if os.path.exists(ap):
                 os.remove(ap)
-        db.delete(image)
+        image_repo.delete_image(db, image)
     db.commit()
     
 
-    await image_service._save_files_and_create_images(db, db_reward.id, files, parent_type="reward")
+    await image_service._save_files_and_create_images(
+        db,
+        parent_type="reward",
+        parent_id=db_reward.id,
+        files=files,
+        images_manifest=None
+    )
     calculate_backup_amounts_for_post(db, db_reward.post_id)
 
     return db_reward
@@ -93,6 +99,7 @@ def delete_reward(db: Session, reward_id: UUID):
             ap = _abs(image.path)
             if os.path.exists(ap):
                 os.remove(ap)
+        image_repo.delete_image(db, image)
     
     calculate_backup_amounts_for_post(db, db_reward.post_id)
     return repo.delete_reward(db, db_reward)

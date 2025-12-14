@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from uuid import UUID
 from typing import Optional
 
-from src.modules.notification.model import NotificationType
+from src.modules.common.enums import NotificationType
 
 class NotificationBase(BaseModel):
     post_id: Optional[UUID] = None

@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 import uuid
-from sqlalchemy import Column, String, Integer, DateTime, ForeignKey
+from sqlalchemy import Column, String, Integer, DateTime, ForeignKey, and_
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from src.database.db import Base
@@ -17,7 +17,15 @@ class Campaign(Base):
     )
     campaign_header = Column(String, nullable=False)
     campaign_description = Column(String, nullable=True)
-    order = Column(Integer, default=0)
+    display_order = Column(Integer, default=0)
 
     post = relationship("Post", back_populates="campaigns")  
-    image = relationship("Image", back_populates="campaign", cascade="all, delete")
+
+    images = relationship(
+        "Image",
+        secondary="imageHandler",
+        primaryjoin="and_(Campaign.id==ImageHandler.reference_id, ImageHandler.type=='campaign')",
+        secondaryjoin="ImageHandler.image_id==Image.id",
+        order_by="Image.display_order",
+        viewonly=True,
+    )

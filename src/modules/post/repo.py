@@ -14,8 +14,8 @@ def list_posts(db: Session):
         .options(
             joinedload(Post.user).load_only(user_model.User.username).joinedload(user_model.User.image),
             joinedload(model.Post.images),
-            joinedload(model.Post.campaigns).joinedload(camp_model.Campaign.image), 
-            joinedload(model.Post.rewards).joinedload(reward_model.Reward.image),
+            joinedload(model.Post.campaigns).joinedload(camp_model.Campaign.images), 
+            joinedload(model.Post.rewards).joinedload(reward_model.Reward.images),
         ).all()
     )
 
@@ -25,15 +25,15 @@ def get_post(db: Session, post_id):
         .options( 
             joinedload(Post.user).load_only(user_model.User.username).joinedload(user_model.User.image),
             joinedload(model.Post.images),
-            joinedload(model.Post.campaigns).joinedload(camp_model.Campaign.image),
-            joinedload(model.Post.rewards).joinedload(reward_model.Reward.image),
+            joinedload(model.Post.campaigns).joinedload(camp_model.Campaign.images),
+            joinedload(model.Post.rewards).joinedload(reward_model.Reward.images),
         )
         .filter(model.Post.id == post_id)
         .first()
     )
 
 def update_post(db: Session, db_post: model.Post, data: schema.PostUpdate):
-    for key, value in data.model_dump().items():
+    for key, value in data.model_dump(exclude_unset=True).items():
         setattr(db_post, key, value)
     db.commit()
     db.refresh(db_post)

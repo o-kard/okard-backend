@@ -61,7 +61,7 @@ async def create(
         parsed = json.loads(campaigns)
         if not isinstance(parsed, list): raise HTTPException(status_code=400, detail="Invalid campaigns payload")
         for it in parsed:
-            if not isinstance(it, dict) or "order" not in it: raise HTTPException(status_code=400, detail="Invalid campaigns payload")
+            if not isinstance(it, dict) or "display_order" not in it: raise HTTPException(status_code=400, detail="Invalid campaigns payload")
         camp_list_raw = parsed
 
     camp_img_list: Optional[List[UploadFile]] = None
@@ -77,7 +77,7 @@ async def create(
         parsed = json.loads(rewards)
         if not isinstance(parsed, list): raise HTTPException(status_code=400, detail="Invalid rewards payload")
         for it in parsed:
-            if not isinstance(it, dict) or "order" not in it: raise HTTPException(status_code=400, detail="Invalid rewards payload")
+            if not isinstance(it, dict) or "display_order" not in it: raise HTTPException(status_code=400, detail="Invalid rewards payload")
         reward_list_raw = parsed
 
     reward_img_list = None
@@ -141,7 +141,7 @@ async def update(
         parsed = json.loads(campaigns)
         if not isinstance(parsed, list): raise HTTPException(status_code=400, detail="Invalid campaigns payload")
         for it in parsed:
-            if not isinstance(it, dict) or "order" not in it: raise HTTPException(status_code=400, detail="Invalid campaigns payload")
+            if not isinstance(it, dict) or "display_order" not in it: raise HTTPException(status_code=400, detail="Invalid campaigns payload")
         camp_payload = parsed
 
     reward_payload = None
@@ -149,7 +149,7 @@ async def update(
         parsed = json.loads(rewards)
         if not isinstance(parsed, list): raise HTTPException(status_code=400, detail="Invalid rewards payload")
         for it in parsed:
-            if not isinstance(it, dict) or "order" not in it: raise HTTPException(status_code=400, detail="Invalid rewards payload")
+            if not isinstance(it, dict) or "display_order" not in it: raise HTTPException(status_code=400, detail="Invalid rewards payload")
         reward_payload = parsed
 
     post_img_list = images if isinstance(images, list) else ([images] if images else None)
