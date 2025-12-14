@@ -42,11 +42,7 @@ async def create_reward_with_images(
 ):
     db_rewards = []
     for data in reward_data:
-        db_reward = model.Reward(**data.model_dump())
-        db.add(db_reward)
-        db.commit()
-        db.refresh(db_reward)
-
+        db_reward = repo.create_reward(db, data)
         await image_service._save_files_and_create_images(
             db,
             parent_type="reward",
