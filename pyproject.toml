@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "alembic>=1.17.2",
     "clerk-backend-api>=3.3.1",
     "fastapi>=0.116.1",
     "joblib>=1.5.2",
@@ -16,4 +17,10 @@ dependencies = [
     "tabm>=0.0.3",
     "torch>=2.8.0",
     "uvicorn>=0.35.0",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.0.2",
 ]
