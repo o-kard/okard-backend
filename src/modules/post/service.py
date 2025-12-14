@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 from typing import List, Optional
 import uuid
@@ -9,6 +10,8 @@ from . import repo, schema, model
 from src.modules.image import model as image_model, repo as image_repo, service as image_service
 from src.modules.campaign import schema as campaign_schema, service as campaign_service
 from src.modules.reward import schema as reward_schema, service as reward_service
+from src.modules.model import service as model_service, schema as model_schema, repo as model_repo
+from src.modules.country import service as country_service
 from pathlib import Path
 from src.modules.user.repo import get_user_by_clerk_id 
 import os
@@ -18,6 +21,15 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 
 UPLOAD_DIR = BASE_DIR / "uploads" / "images"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+def format_datetime(dt):
+    if not dt:
+        return None
+    if isinstance(dt, str):
+        return dt
+    if isinstance(dt, datetime):
+        return dt.isoformat(timespec="minutes")
+    return str(dt)
 
 def _abs(rel: str) -> str:
     return (BASE_DIR / rel.lstrip("/")).as_posix()
@@ -112,6 +124,21 @@ async def create_post(
     # 1) create post
     db_post = repo.create_post_by_user(db, user_id=user.id, data=post_data)
 
+    predict_input = {
+        "goal": post_data.goal_amount,
+        "name": post_data.post_header,
+        "blurb": post_data.post_description or "",
+        "start_date": format_datetime(post_data.effective_start_from),
+        "end_date": format_datetime(post_data.effective_end_date),
+        "country_displayable_name": country_service.get_country(db, user.country_id).en_name,
+        "has_video": 0,
+        "has_photo": 1 if post_images else 0,
+    }
+
+    input_model = model_schema.InputData(**predict_input)
+
+    await model_service.predict(db,input_model,db_post.id,True)
+
     # 2) post images
     await image_service._save_files_and_create_images(
         db, parent_type="post", parent_id=db_post.id,
@@ -157,7 +184,7 @@ async def update_post(
     rewards_payload: Optional[List[dict]] = None,
     reward_images: Optional[List[UploadFile]] = None,
     post_images_manifest: Optional[list[dict]] = None,
-    post_images_reorder: Optional[list[dict]] = None, 
+    post_images_reorder: Optional[list[dict]] = None,
 ):
     db_post = verify_post_owner(db, post_id, clerk_id)
 

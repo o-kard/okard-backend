@@ -11,6 +11,7 @@ from src.modules.campaign import model as campaign_model
 from src.modules.reward import model as reward_model
 from src.modules.contributor import model as contributor_model
 from src.modules.payment import model as payment_model
+from src.modules.model import model as predict_model
 
 from src.modules.notification import model as notification_model
 
@@ -21,7 +22,7 @@ from src.modules.user.controller import router as user_router
 from src.modules.country.controller import router as country_router
 from src.modules.payment.controller import router as payment_router
 from src.modules.comment.controller import router as comment_router
-from src.modules.model.router import router as predict_router
+from src.modules.model.controller import router as predict_router
 
 from src.modules.notification.controller import router as notification_router
 from src.modules.dashboard.controller import router as dashboard_router
