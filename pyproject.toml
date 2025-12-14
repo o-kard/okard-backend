@@ -7,8 +7,14 @@ requires-python = ">=3.11"
 dependencies = [
     "clerk-backend-api>=3.3.1",
     "fastapi>=0.116.1",
+    "joblib>=1.5.2",
+    "numpy>=2.3.3",
     "openai>=1.97.1",
+    "pandas>=2.3.3",
     "python-dotenv>=1.1.1",
+    "sentence-transformers>=5.1.1",
     "sqlalchemy>=2.0.41",
+    "tabm>=0.0.3",
+    "torch>=2.8.0",
     "uvicorn>=0.35.0",
 ]
