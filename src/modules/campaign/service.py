@@ -40,11 +40,7 @@ async def create_campaign_with_images(
 ):
     db_campaigns = []
     for data in campaign_data:
-        db_campaign = model.Campaign(**data.model_dump())
-        db.add(db_campaign)
-        db.commit()
-        db.refresh(db_campaign)
-
+        db_campaign = repo.create_campaign(db, data)
         await image_service._save_files_and_create_images(
             db,
             parent_type="campaign",

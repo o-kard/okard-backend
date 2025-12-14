@@ -4,12 +4,15 @@ from uuid import UUID
 from src.modules.campaign import model as camp_model
 from src.modules.image import model as image_model
 from src.modules.reward import model as reward_model
+from src.modules.user import model as user_model
+
 from .model import Post
 
 def list_posts(db: Session):
     return (
         db.query(model.Post)
         .options(
+            joinedload(Post.user).load_only(user_model.User.username).joinedload(user_model.User.image),
             joinedload(model.Post.images),
             joinedload(model.Post.campaigns).joinedload(camp_model.Campaign.image), 
             joinedload(model.Post.rewards).joinedload(reward_model.Reward.image),
@@ -19,7 +22,8 @@ def list_posts(db: Session):
 def get_post(db: Session, post_id):
     return (
         db.query(model.Post)
-        .options(
+        .options( 
+            joinedload(Post.user).load_only(user_model.User.username).joinedload(user_model.User.image),
             joinedload(model.Post.images),
             joinedload(model.Post.campaigns).joinedload(camp_model.Campaign.image),
             joinedload(model.Post.rewards).joinedload(reward_model.Reward.image),

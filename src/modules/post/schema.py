@@ -7,6 +7,7 @@ from src.modules.reward.schema import RewardOut
 from .model import PostState, PostStatus, PostCategory
 from src.modules.image.schema import ImageOut
 from src.modules.campaign.schema import CampaignOut
+from src.modules.user.schema import UserPublicResponse
 
 class PostBase(BaseModel):
     effective_start_from: Optional[datetime]
@@ -28,10 +29,12 @@ class PostUpdate(PostBase):
 
 class PostOut(PostBase):
     id: UUID
+    user_id: UUID
     created_at: datetime
     images: List[ImageOut] = []
     campaigns: List[CampaignOut] = []
     rewards: List[RewardOut] = []
-
+    user: UserPublicResponse
+    
     class Config:
         orm_mode = True
