@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, computed_field
 from uuid import UUID
 from datetime import datetime
 from typing import Optional, List
@@ -45,5 +45,32 @@ class PostOut(PostBase):
     rewards: List[RewardOut] = []
     user: UserPublicResponse
     
+    class Config:
+        orm_mode = True
+            
+class PostSummaryOut(BaseModel):
+    id: UUID
+    user_id: UUID
+    category: PostCategory
+
+    post_header: str
+    post_description: str | None
+
+    goal_amount: int
+    current_amount: int
+    supporter: int
+
+    images: List[ImageOut]
+    user: UserPublicResponse
+    state: Optional[PostState]
+    status: Optional[PostStatus]
+    
+    @computed_field
+    @property
+    def progress(self) -> int:
+        if self.goal_amount:
+            return int((self.current_amount / self.goal_amount) * 100)
+        return 0
+
     class Config:
         orm_mode = True

@@ -8,4 +8,6 @@ router = APIRouter(prefix="/search", tags=["Search"])
 
 @router.get("/", response_model=SearchResponse)
 def search(query: str, request: Request, db: Session = Depends(get_db)):
-    return SearchService.search(db, query, request)
+    response = SearchService.search(db, query, request)
+    response.results = response.results[:5]
+    return response

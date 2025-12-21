@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Integer, BigInteger, Enum, ForeignKey, DateTime, and_
+from sqlalchemy import Column, String, Integer, BigInteger, Enum, ForeignKey, DateTime, Float, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from src.database.db import Base
@@ -49,7 +49,8 @@ class Post(Base):
     post_header = Column(String, nullable=False)
     post_description = Column(String, nullable=True)
     supporter = Column(Integer, default=0)
-
+    embedding = Column(Text, nullable=True)
+    
     user = relationship("User", back_populates="posts")
     campaigns = relationship("Campaign", back_populates="post", cascade="all, delete")
     rewards = relationship("Reward", back_populates="post", cascade="all, delete")

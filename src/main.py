@@ -29,10 +29,8 @@ from src.modules.notification.controller import router as notification_router
 from src.modules.dashboard.controller import router as dashboard_router
 
 from src.modules.search.controller import router as search_router
-from src.modules.edit_request.controller import router as edit_request_router
-from src.modules.report.controller import router as report_router
-from src.modules.progress.controller import router as progress_router
-from src.modules.home.controller import router as home_router
+from src.modules.for_you.controller import router as for_you_router
+from src.modules.post_recommend.controller import router as post_recommend_router
 
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -78,6 +76,7 @@ def read_root():
     return {"message": "Welcome to O-Kard API 🚀"}
 
 app.include_router(test_router, prefix="/api")
+app.include_router(for_you_router, prefix="/api")
 app.include_router(post_router, prefix="/api")
 app.include_router(user_router, prefix="/api")
 app.include_router(image_router, prefix="/api")
@@ -90,9 +89,4 @@ app.include_router(predict_router, prefix="/api")
 app.include_router(notification_router, prefix="/api")
 app.include_router(dashboard_router, prefix="/api")
 app.include_router(search_router, prefix="/api")
-app.include_router(edit_request_router, prefix="/api")
-
-app.include_router(report_router, prefix="/api")
-app.include_router(progress_router, prefix="/api")
-
-app.include_router(home_router, prefix="/api")
+app.include_router(post_recommend_router, prefix="/api")

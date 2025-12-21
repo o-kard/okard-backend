@@ -9,14 +9,14 @@ from .service import get_top_pledged_campaigns
 from .schema import CategoryStat
 from .service import get_category_stats_service
 
-from .schema import HomeCampaign
+from .schema import HomePostOut
 
 router = APIRouter(prefix="/home", tags=["home"])
 
 
 @router.get(
     "/top-pledged-campaigns",
-    response_model=list[HomeCampaign],
+    response_model=list[HomePostOut],
 )
 def get_top_pledged_campaigns_controller(
     limit: int = 10,

@@ -12,6 +12,17 @@ from src.modules.model import controller as predict_controller
 from src.modules.model.schema import InputData
 from src.modules.auth import get_current_user
 
+from fastapi import BackgroundTasks
+from src.modules.post.background import generate_post_embedding
+from src.modules.post_view.service import log_post_view
+from src.modules.user.repo import get_user_by_clerk_id
+
+from src.modules.post_recommend import service as recommend_service
+from src.modules.post_recommend import schema as recommend_schema
+
+from src.modules.for_you import service as for_you_service
+from src.modules.for_you import schema as for_you_schema
+
 router = APIRouter(prefix="/post", tags=["Post"])
 
 @router.get("", response_model=list[schema.PostOut])
@@ -19,11 +30,20 @@ def list_posts(db: Session = Depends(get_db)):
     return service.list_posts(db)
 
 @router.get("/{post_id}", response_model=schema.PostOut)
-def get_post(post_id: UUID, db: Session = Depends(get_db)):
+def get_post(post_id: UUID, clerk_id: str | None = Query(None), db: Session = Depends(get_db)):
     try:
-        return service.get_post(db, post_id)
+        post = service.get_post(db, post_id)
     except ValueError:
         raise HTTPException(status_code=404, detail="Not found")
+
+    # ✅ log view ถ้ามี user
+    if clerk_id:
+        user = get_user_by_clerk_id(db, clerk_id)
+        if user:
+            log_post_view(db, user.id, post_id)
+
+    return post
+    
 
 @router.delete("/{post_id}", response_model=schema.PostOut)
 def delete(post_id: UUID,clerk_id: str = Query(...), db: Session = Depends(get_db)):
@@ -44,6 +64,7 @@ async def create(
     reward_images: Union[List[UploadFile], UploadFile, None] = File(None),     
     clerk_id: str = Query(...),
     db: Session = Depends(get_db),
+    background_tasks: BackgroundTasks = None,
 ):
     # print("post_images:", len(images or []))
     # print("create_campaigns:", len(campaigns or []), "camp_files:", len(campaign_images or []))
@@ -91,15 +112,21 @@ async def create(
         
     post_img_list = images if isinstance(images, list) else ([images] if images else [])
     manifest = json.loads(images_manifest) if images_manifest else []
-
-
-    return await service.create_post(
+        
+    post = await service.create_post(
         db=db, clerk_id=clerk_id, post_data=post_obj,
         post_images=post_img_list,
         post_images_manifest=manifest,
         campaigns=camp_list_raw, campaign_images=camp_img_list,
         rewards=reward_list_raw, reward_images=reward_img_list,
     )
+    
+        # ✅ async embedding
+    if background_tasks:
+        background_tasks.add_task(generate_post_embedding, post.id)
+
+    return post
+    
 
 @router.put("/{post_id}/with-campaigns", response_model=schema.PostOut)
 async def update(
@@ -114,6 +141,7 @@ async def update(
     db: Session = Depends(get_db),
     images_manifest: Union[str, None] = Form(None),         
     images_reorder: Union[str, None] = Form(None),   
+    background_tasks: BackgroundTasks = None,
 ):
     # --- parse post_data ---
     post_upd = None
@@ -158,7 +186,7 @@ async def update(
     reorder_list = json.loads(images_reorder) if images_reorder else None
 
     # --- call service ---
-    return await service.update_post(
+    post = await service.update_post(
         db=db,
         post_id=post_id,
         clerk_id=clerk_id,
@@ -171,6 +199,11 @@ async def update(
         post_images_manifest=img_manifest,           
         post_images_reorder=reorder_list, 
     )
+    # ✅ ถ้ามี post_data แปลว่า content อาจเปลี่ยน → regenerate embedding
+    if background_tasks and post_data:
+        background_tasks.add_task(generate_post_embedding, post_id)
+
+    return post
     
 @router.put("/{post_id}/status", response_model=schema.PostOut)
 def update_post_status(
