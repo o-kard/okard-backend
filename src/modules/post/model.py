@@ -6,6 +6,32 @@ from src.database.db import Base
 from datetime import datetime, timezone
 from src.modules.common.enums import PostState, PostStatus, PostCategory
 
+class PostState(str, enum.Enum):
+    draft = "draft"
+    published = "published"
+    archived = "archived"
+
+class PostStatus(str, enum.Enum):
+    active = "active"
+    inactive = "inactive"
+
+class PostCategory(str, enum.Enum):
+    art = "art"
+    comics = "comics"
+    crafts = "crafts"
+    dance = "dance"
+    design = "design"
+    fashion = "fashion"
+    filmVideo = "filmVideo"
+    food = "food"
+    games = "games"
+    journalism = "journalism"
+    music = "music"
+    photography = "photography"
+    publishing = "publishing"
+    technology = "technology"
+    theater = "theater"
+
 class Post(Base):
     __tablename__ = "post"
 
@@ -17,7 +43,7 @@ class Post(Base):
     effective_end_date = Column(DateTime(timezone=True), nullable=True)
     state = Column(Enum(PostState), default=PostState.draft)
     status = Column(Enum(PostStatus), default=PostStatus.active)
-    category = Column(Enum(PostCategory), default=PostCategory.other)
+    category = Column(Enum(PostCategory), default=PostCategory.art)
     goal_amount = Column(BigInteger, default=0)
     current_amount = Column(BigInteger, default=0)
     post_header = Column(String, nullable=False)

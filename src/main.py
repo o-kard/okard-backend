@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from src.database.db import engine
 from src.modules.test.model import Base
 from fastapi.middleware.cors import CORSMiddleware
@@ -32,24 +32,47 @@ from src.modules.search.controller import router as search_router
 from src.modules.edit_request.controller import router as edit_request_router
 from src.modules.report.controller import router as report_router
 from src.modules.progress.controller import router as progress_router
+from src.modules.home.controller import router as home_router
 
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.base import BaseHTTPMiddleware
 from pathlib import Path
+
+class StaticCORSMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+
+        if request.url.path.startswith("/uploads"):
+            response.headers["Access-Control-Allow-Origin"] = "*"
+            response.headers["Cross-Origin-Resource-Policy"] = "cross-origin"
+
+        return response
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
 BASE_DIR = Path(__file__).resolve().parent
-app.mount("/uploads", StaticFiles(directory=BASE_DIR / "uploads"), name="uploads")
+# app.mount("/uploads", StaticFiles(directory=BASE_DIR / "uploads"), name="uploads")
 
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=["http://localhost:3000"], 
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"], 
-    allow_credentials=True,
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.add_middleware(StaticCORSMiddleware)
+
+app.mount("/uploads",StaticFiles(directory=BASE_DIR / "uploads"),name="uploads")
+
 @app.get("/")
 def read_root():
     return {"message": "Welcome to O-Kard API 🚀"}
@@ -71,3 +94,5 @@ app.include_router(edit_request_router, prefix="/api")
 
 app.include_router(report_router, prefix="/api")
 app.include_router(progress_router, prefix="/api")
+
+app.include_router(home_router, prefix="/api")
