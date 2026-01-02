@@ -24,8 +24,17 @@ class PostBase(BaseModel):
 class PostCreate(PostBase):
     pass
 
-class PostUpdate(PostBase):
-    pass
+class PostUpdate(BaseModel):
+    effective_start_from: Optional[datetime] = None
+    effective_end_date: Optional[datetime] = None
+    state: Optional[PostState] = None
+    status: Optional[PostStatus] = None
+    category: Optional[PostCategory] = None
+    goal_amount: Optional[int] = None
+    current_amount: Optional[int] = None
+    post_header: Optional[str] = None
+    post_description: Optional[str] = None
+    supporter: Optional[int] = None
 
 class PostOut(PostBase):
     id: UUID

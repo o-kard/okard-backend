@@ -28,7 +28,7 @@ def create_payment(db: Session, clerk_id: str, data: schema.PaymentCreate) -> mo
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    payload = schema.PaymentCreate(**data.model_dump(), user_id=user.id)
+    payload = data
 
     post = post_repo.get_post(db, payload.post_id)
     if not post:
@@ -38,7 +38,7 @@ def create_payment(db: Session, clerk_id: str, data: schema.PaymentCreate) -> mo
     print(prev_amount)
     goal_amount = post.goal_amount 
 
-    db_payment = repo.create_payment(db, payload)
+    db_payment = repo.create_payment(db, payload, user_id=user.id)
 
     contributor_service.ensure_and_add_amount(
         db=db,

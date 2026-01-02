@@ -14,8 +14,13 @@ class RewardBase(BaseModel):
 class RewardCreate(RewardBase):
     post_id: UUID
 
-class RewardUpdate(RewardBase):
-    post_id: Optional[UUID] = None             
+class RewardUpdate(BaseModel):
+    reward_header: Optional[str] = None    
+    reward_description: Optional[str] = None 
+    display_order: Optional[int] = None
+    reward_amount: Optional[int] = None
+    backup_amount: Optional[int] = None
+    post_id: Optional[UUID] = None
 
 class RewardOut(RewardBase):
     id: UUID

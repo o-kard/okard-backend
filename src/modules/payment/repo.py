@@ -9,8 +9,8 @@ def list_payments(db: Session):
 def get_payment(db: Session, payment_id: UUID):
     return db.query(model.Payment).filter(model.Payment.id == payment_id).first()
 
-def create_payment(db: Session, payment: schema.PaymentCreate):
-    db_payment = model.Payment(**payment.model_dump())
+def create_payment(db: Session, payment: schema.PaymentCreate, user_id: UUID):
+    db_payment = model.Payment(**payment.model_dump(), user_id=user_id)
     db.add(db_payment)
     db.commit()
     db.refresh(db_payment)

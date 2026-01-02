@@ -14,6 +14,7 @@ from src.modules.payment import model as payment_model
 from src.modules.model import model as predict_model
 
 from src.modules.notification import model as notification_model
+from src.modules.progress import model as progress_model
 
 from src.modules.test.controller import router as test_router
 from src.modules.post.controller import router as post_router
@@ -28,6 +29,9 @@ from src.modules.notification.controller import router as notification_router
 from src.modules.dashboard.controller import router as dashboard_router
 
 from src.modules.search.controller import router as search_router
+from src.modules.edit_request.controller import router as edit_request_router
+from src.modules.report.controller import router as report_router
+from src.modules.progress.controller import router as progress_router
 
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
@@ -63,3 +67,7 @@ app.include_router(predict_router, prefix="/api")
 app.include_router(notification_router, prefix="/api")
 app.include_router(dashboard_router, prefix="/api")
 app.include_router(search_router, prefix="/api")
+app.include_router(edit_request_router, prefix="/api")
+
+app.include_router(report_router, prefix="/api")
+app.include_router(progress_router, prefix="/api")

@@ -196,11 +196,6 @@ async def update_post(
         repo.update_post(db, db_post, post_data)
 
     # 2) Manage Images
-    # Strategy: 
-    # - post_images_reorder: Contains IDs of EXISTING images to keep & their new order. 
-    #   Implicitly, any existing image NOT in this list will be DELETED.
-    # - post_images: New files to ADD.
-
     # A. Handle Existing Images (Reorder + Delete)
     if post_images_reorder is not None:
         # 1. Parse payload
@@ -214,9 +209,7 @@ async def update_post(
             if img_id in current_images:
                 current_images[img_id].display_order = order
         
-        # 4. Delete missing images (Existing in DB but NOT in reorder list)
-        # Note: We only delete images that are NOT in the reorder list.
-        # This allows the frontend to spec 'keep these'. 
+        # 4. Delete missing images (Existing in DB but NOT in reorder list) 
         kept_ids = set(id_to_order.keys())
         for img_id, img in current_images.items():
             if img_id not in kept_ids:
