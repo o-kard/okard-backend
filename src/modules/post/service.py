@@ -79,6 +79,12 @@ def update_post(db: Session, post_id: UUID, post_data: schema.PostUpdate):
     db_post = get_post(db, post_id)
     return repo.update_post(db, db_post, post_data)
 
+# Service to change post status
+def change_post_status(db: Session, post_id: UUID, status: schema.PostStatus):
+    db_post = get_post(db, post_id)
+    # Add business logic for allowed transitions if needed
+    return repo.update_post_status(db, db_post, status)
+
 def delete_post(db: Session, post_id: UUID):
     db_post = get_post(db, post_id)
 

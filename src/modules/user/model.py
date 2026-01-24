@@ -22,6 +22,7 @@ class User(Base):
     user_description = Column(String)
     campaign_number = Column(Integer, default=0)
     contribution_number = Column(Integer, default=0)
+    role = Column(String, default="user")
     
     posts = relationship("Post", back_populates="user")
 

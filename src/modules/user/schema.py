@@ -32,6 +32,7 @@ class UserResponse(UserBase):
     contribution_number: int
     image: ImageOut | None = None
     country: CountryOut | None = None
+    role: str | None = None
     
     class Config:
         orm_mode = True

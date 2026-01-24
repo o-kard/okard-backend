@@ -26,3 +26,6 @@ def update_user(db: Session, user_id, user_data: schema.UserUpdate):
     db.commit()
     db.refresh(existing_user)
     return existing_user
+
+def list_users(db: Session):
+    return db.query(model.User).all()

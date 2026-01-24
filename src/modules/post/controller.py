@@ -10,6 +10,7 @@ from fastapi import Form
 from src.modules.post import repo
 from src.modules.model import controller as predict_controller
 from src.modules.model.schema import InputData
+from src.modules.auth import get_current_user
 
 router = APIRouter(prefix="/post", tags=["Post"])
 
@@ -170,7 +171,21 @@ async def update(
         post_images_manifest=img_manifest,           
         post_images_reorder=reorder_list, 
     )
-
+    
+@router.put("/{post_id}/status", response_model=schema.PostOut)
+def update_post_status(
+    post_id: UUID,
+    status: schema.PostStatus = Query(...),
+    current_user: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+): 
+    try:
+        clerk_id = current_user["sub"]
+        service.verify_post_owner(db, post_id, clerk_id)
+        return service.change_post_status(db, post_id, status)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Not found")
+    
 # @router.post("/predict/{post_id}")
 # async def predict_post(post_id: UUID, db: Session = Depends(get_db)):
 #     post = repo.get_post_by_id(db, post_id)

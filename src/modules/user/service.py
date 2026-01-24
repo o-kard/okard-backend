@@ -15,3 +15,6 @@ def get_user_by_clerk_id(db: Session, clerk_id: str):
 
 def update_user_from_clerk(db: Session, user_id, user_data: schema.UserUpdate):
     return repo.update_user(db, user_id, user_data)
+
+def list_users(db: Session):
+    return repo.list_users(db)

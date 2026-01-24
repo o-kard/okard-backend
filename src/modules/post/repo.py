@@ -39,6 +39,13 @@ def update_post(db: Session, db_post: model.Post, data: schema.PostUpdate):
     db.refresh(db_post)
     return db_post
 
+# Repo to update post status
+def update_post_status(db: Session, db_post: model.Post, status: schema.PostStatus):
+    db_post.status = status
+    db.commit()
+    db.refresh(db_post)
+    return db_post
+
 def delete_post(db: Session, db_post: model.Post):
     db.delete(db_post)
     db.commit()

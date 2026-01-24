@@ -21,6 +21,7 @@ class PostState(str, enum.Enum):
 class PostStatus(str, enum.Enum):
     active = "active"
     inactive = "inactive"
+    suspended = "suspended"
 
 class PostCategory(str, enum.Enum):
     tech = "tech"

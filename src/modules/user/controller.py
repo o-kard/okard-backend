@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from . import schema, service
+from src.modules.auth import get_current_user
 from src.database.db import get_db
 from src.modules.image.schema import ImageOut
 from src.modules.image.service import create_image_from_upload, delete_image
@@ -58,6 +59,11 @@ async def update_user(
         
     return user_response
 
+@router.get("/list", response_model=list[schema.UserResponse])
+def list_users(db: Session = Depends(get_db)):
+    users = service.list_users(db)
+    return users
+
 @router.get("/{clerk_id}", response_model=schema.UserResponse)
 def get_user_by_clerk_id(clerk_id: str, db: Session = Depends(get_db)):
     user = service.get_user_by_clerk_id(db, clerk_id)
@@ -68,3 +74,26 @@ def get_user_by_clerk_id(clerk_id: str, db: Session = Depends(get_db)):
 @router.get("/exists/{clerk_id}", response_model=schema.UserExistsResponse)
 def user_exists(clerk_id: str, db: Session = Depends(get_db)):
     return {"exists": service.get_user_by_clerk_id(db, clerk_id) is not None}
+
+@router.get("", response_model=schema.UserResponse)
+def get_me(
+    payload: dict = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    clerk_id = payload["sub"]
+
+    user = service.get_user_by_clerk_id(db, clerk_id)
+    if not user:
+        raise HTTPException(status_code=401)
+
+    return user
+
+@router.delete("/delete/{user_id}", response_model=schema.UserResponse)
+async def delete_user(
+    user_id: UUID,
+    db: Session = Depends(get_db)
+):
+    user_response = service.delete_user(db, user_id)
+    if not user_response:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user_response
