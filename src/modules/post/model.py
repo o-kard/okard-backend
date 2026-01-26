@@ -6,31 +6,6 @@ from src.database.db import Base
 from datetime import datetime, timezone
 from src.modules.common.enums import PostState, PostStatus, PostCategory
 
-class PostState(str, enum.Enum):
-    draft = "draft"
-    published = "published"
-    archived = "archived"
-
-class PostStatus(str, enum.Enum):
-    active = "active"
-    inactive = "inactive"
-
-class PostCategory(str, enum.Enum):
-    art = "art"
-    comics = "comics"
-    crafts = "crafts"
-    dance = "dance"
-    design = "design"
-    fashion = "fashion"
-    filmVideo = "filmVideo"
-    food = "food"
-    games = "games"
-    journalism = "journalism"
-    music = "music"
-    photography = "photography"
-    publishing = "publishing"
-    technology = "technology"
-    theater = "theater"
 
 class Post(Base):
     __tablename__ = "post"
@@ -56,6 +31,7 @@ class Post(Base):
     rewards = relationship("Reward", back_populates="post", cascade="all, delete")
     comments = relationship("Comment", back_populates="post", cascade="all, delete-orphan")
     models = relationship("Model", back_populates="post", cascade="all, delete")
+    progress = relationship("Progress", back_populates="post", cascade="all, delete-orphan")
 
     images = relationship(
         "Image",

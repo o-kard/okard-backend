@@ -24,6 +24,8 @@ from src.modules.country.controller import router as country_router
 from src.modules.payment.controller import router as payment_router
 from src.modules.comment.controller import router as comment_router
 from src.modules.model.controller import router as predict_router
+from src.modules.home.controller import router as home_router
+from src.modules.edit_request.controller import router as edit_request_router
 
 from src.modules.notification.controller import router as notification_router
 from src.modules.dashboard.controller import router as dashboard_router
@@ -90,3 +92,5 @@ app.include_router(notification_router, prefix="/api")
 app.include_router(dashboard_router, prefix="/api")
 app.include_router(search_router, prefix="/api")
 app.include_router(post_recommend_router, prefix="/api")
+app.include_router(home_router, prefix="/api")
+app.include_router(edit_request_router, prefix="/api")
