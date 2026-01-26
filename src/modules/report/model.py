@@ -1,19 +1,20 @@
+import uuid
 from datetime import datetime, timezone
-from sqlalchemy import Column, String, ForeignKey, Enum, PrimaryKeyConstraint, DateTime
+from sqlalchemy import Column, String, ForeignKey, Enum, PrimaryKeyConstraint, DateTime, Text
 from sqlalchemy.dialects.postgresql import UUID
 from src.database.db import Base
-from src.modules.common.enums import ReportType
+from src.modules.common.enums import ReportType, ReportStatus
 
 class Report(Base):
     __tablename__ = "report"
 
-    post_id = Column(UUID(as_uuid=True), ForeignKey("post.id"), primary_key=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("user.id"), primary_key=True)
-    type = Column(Enum(ReportType), primary_key=True)
-    header = Column(String, nullable=True) # Request said header varchar
-    description = Column(String, nullable=True) # Request said description varchar
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    post_id = Column(UUID(as_uuid=True), ForeignKey("post.id"), nullable=True)
+    reporter_id = Column(UUID(as_uuid=True), ForeignKey("user.id"), nullable=False)
+    type = Column(Enum(ReportType), nullable=False)
+    header = Column(String, nullable=True)
+    description = Column(Text, nullable=True)
+    status = Column(Enum(ReportStatus), nullable=False, default=ReportStatus.pending)
+    admin_notes = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-
-    __table_args__ = (
-        PrimaryKeyConstraint('post_id', 'user_id', 'type'),
-    )
+    resolved_at = Column(DateTime(timezone=True), nullable=True)

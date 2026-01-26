@@ -30,8 +30,15 @@ class PostCategory(str, enum.Enum):
     other = "other"
 
 class ReportType(str, enum.Enum):
-    edit = "edit"
     problem = "problem"
+    spam = "spam"
+    inappropriate = "inappropriate"
+
+class ReportStatus(str, enum.Enum):
+    pending = "pending"
+    investigating = "investigating"
+    resolved = "resolved"
+    dismissed = "dismissed"
 
 class ReferenceType(str, enum.Enum):
     post = "post"
@@ -41,5 +48,14 @@ class ReferenceType(str, enum.Enum):
     reward = "reward"
 
 
-# oweifiojwefiojqfw
-# ifiqfqf
+
+class EditRequestStatus(str, enum.Enum):
+    pending = "pending"
+    approved = "approved"
+    rejected = "rejected"
+    expired = "expired"
+    cancelled = "cancelled"
+
+class VoteDecision(str, enum.Enum):
+    approve = "approve"
+    reject = "reject"
