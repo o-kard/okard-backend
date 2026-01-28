@@ -61,10 +61,17 @@ def upgrade() -> None:
     op.add_column('campaign', sa.Column('display_order', sa.Integer(), nullable=True))
     op.drop_column('campaign', 'order')
     op.add_column('image', sa.Column('display_order', sa.Integer(), nullable=False, server_default='0'))
-    op.drop_constraint(op.f('image_reward_id_fkey'), 'image', type_='foreignkey')
-    op.drop_constraint(op.f('image_campaign_id_fkey'), 'image', type_='foreignkey')
-    op.drop_constraint(op.f('image_user_id_fkey'), 'image', type_='foreignkey')
-    op.drop_constraint(op.f('image_post_id_fkey1'), 'image', type_='foreignkey')
+    # Check existing foreign keys before dropping
+    foreign_keys = [fk['name'] for fk in inspector.get_foreign_keys('image')]
+    
+    if 'image_reward_id_fkey' in foreign_keys:
+        op.drop_constraint('image_reward_id_fkey', 'image', type_='foreignkey')
+    if 'image_campaign_id_fkey' in foreign_keys:
+        op.drop_constraint('image_campaign_id_fkey', 'image', type_='foreignkey')
+    if 'image_user_id_fkey' in foreign_keys:
+        op.drop_constraint('image_user_id_fkey', 'image', type_='foreignkey')
+    if 'image_post_id_fkey1' in foreign_keys:
+        op.drop_constraint('image_post_id_fkey1', 'image', type_='foreignkey')
     op.drop_column('image', 'user_id')
     op.drop_column('image', 'post_id')
     op.drop_column('image', 'reward_id')

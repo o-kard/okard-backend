@@ -8,5 +8,5 @@ class ForYouCampaign(BaseModel):
     score: float
 
 class ForYouResponse(BaseModel):
-    user_id: UUID
+    user_id: UUID | None
     campaigns: list[ForYouCampaign]

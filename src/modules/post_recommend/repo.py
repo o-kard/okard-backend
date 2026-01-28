@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
-from src.modules.post.model import Post
+from src.modules.post.model import Post, PostEmbedding
+from src.modules.common.enums import PostState
 from uuid import UUID
 
 def get_post_by_id(db: Session, post_id: UUID) -> Post | None:
@@ -9,11 +10,12 @@ def list_candidates(db: Session, source: Post):
     # แนะนำเฉพาะโพสต์ที่ active + published (คุณปรับได้)
     return (
         db.query(Post)
+        .join(PostEmbedding, Post.embedding_data)
         .filter(
             Post.id != source.id,
-            Post.embedding.isnot(None),
+            PostEmbedding.embedding.isnot(None),
             Post.status == source.status,   # หรือใช้ PostStatus.active ตรงๆก็ได้
-            Post.state == source.state      # หรือเลือก published เท่านั้น
+            Post.state == PostState.published
         )
         .all()
     )

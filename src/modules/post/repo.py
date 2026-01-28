@@ -8,16 +8,55 @@ from src.modules.user import model as user_model
 
 from .model import Post
 
-def list_posts(db: Session):
-    return (
-        db.query(model.Post)
-        .options(
-            joinedload(Post.user).load_only(user_model.User.username).joinedload(user_model.User.image),
-            joinedload(model.Post.images),
-            joinedload(model.Post.campaigns).joinedload(camp_model.Campaign.images), 
-            joinedload(model.Post.rewards).joinedload(reward_model.Reward.images),
-        ).all()
+from sqlalchemy import or_, desc, asc
+from datetime import datetime, timezone
+
+def list_posts(
+    db: Session,
+    category: str | None = None,
+    q: str | None = None,
+    sort: str | None = None,
+    state: str | None = "published",
+    status: str | None = "active"
+):
+    query = db.query(model.Post).options(
+        joinedload(Post.user).load_only(user_model.User.username).joinedload(user_model.User.image),
+        joinedload(model.Post.images),
+        joinedload(model.Post.campaigns).joinedload(camp_model.Campaign.images), 
+        joinedload(model.Post.rewards).joinedload(reward_model.Reward.images),
     )
+
+    if status and status != "all":
+        query = query.filter(model.Post.status == status)
+
+    if state and state != "all":
+        query = query.filter(model.Post.state == state)
+
+    if category:
+        query = query.filter(model.Post.category == category)
+
+    if q:
+        search = f"%{q}%"
+        query = query.filter(
+            or_(
+                model.Post.post_header.ilike(search),
+                model.Post.post_description.ilike(search)
+            )
+        )
+
+    if sort == "newest":
+        query = query.order_by(desc(model.Post.created_at))
+    elif sort == "ending_soon":
+        now = datetime.now(timezone.utc)
+        query = query.filter(model.Post.effective_end_date > now).order_by(asc(model.Post.effective_end_date))
+    elif sort == "popular":
+        query = query.order_by(desc(model.Post.supporter))
+    elif sort == "updated":
+         query = query.order_by(desc(model.Post.created_at))
+    else:
+        query = query.order_by(desc(model.Post.created_at))
+
+    return query.all()
 
 def get_post(db: Session, post_id):
     return (

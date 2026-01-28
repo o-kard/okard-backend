@@ -10,18 +10,20 @@ def recommend_by_post(db: Session, post_id: UUID, top_k: int = 5):
         raise ValueError("Post not found")
 
     # ✅ fallback ถ้า embedding ยังไม่พร้อม
-    if not source.embedding:
+    if not source.embedding_data or not source.embedding_data.embedding:
         posts = repo.fallback_same_category(db, source, top_k)
         return [{"post_id": p.id, "score": 0.0} for p in posts]
 
-    source_vec = np.array(json.loads(source.embedding))
+    source_vec = np.array(json.loads(source.embedding_data.embedding))
 
     candidates = repo.list_candidates(db, source)
 
     scored = []
     for p in candidates:
         try:
-            vec = np.array(json.loads(p.embedding))
+            if not p.embedding_data or not p.embedding_data.embedding:
+                continue
+            vec = np.array(json.loads(p.embedding_data.embedding))
             score = float(vec @ source_vec) 
             scored.append((p.id, score))
         except Exception:

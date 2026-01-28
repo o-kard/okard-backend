@@ -20,7 +20,7 @@ class SearchService:
     @staticmethod
     def search(db: Session, query: str, request: Request) -> SearchResponse:
 
-        users = SearchRepository.search_users(db, query)
+        # users = SearchRepository.search_users(db, query)
         posts = SearchRepository.search_posts(db, query)
 
         results = []
@@ -28,22 +28,22 @@ class SearchService:
         # -----------------------
         # USER SEARCH
         # -----------------------
-        for u in users:
-            thumbnail = None
-            if u.image:
-                thumbnail = SearchService.build_image_url(request, u.image.path)
-            if u:
-                user_name = (
-                    f"{u.first_name} {u.surname}"
-                    if u.first_name else u.username
-                )
-            results.append(SearchResult(
-                id=u.id,
-                type="user",
-                name=user_name,
-                thumbnail=thumbnail,
-                creator=None
-            ))
+        # for u in users:
+        #     thumbnail = None
+        #     if u.image:
+        #         thumbnail = SearchService.build_image_url(request, u.image.path)
+        #     if u:
+        #         user_name = (
+        #             f"{u.first_name} {u.surname}"
+        #             if u.first_name else u.username
+        #         )
+        #     results.append(SearchResult(
+        #         id=u.id,
+        #         type="user",
+        #         name=user_name,
+        #         thumbnail=thumbnail,
+        #         creator=None
+        #     ))
 
         # -----------------------
         # POST SEARCH

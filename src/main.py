@@ -33,6 +33,7 @@ from src.modules.dashboard.controller import router as dashboard_router
 from src.modules.search.controller import router as search_router
 from src.modules.for_you.controller import router as for_you_router
 from src.modules.post_recommend.controller import router as post_recommend_router
+from src.modules.progress.controller import router as progress_router
 
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -94,3 +95,4 @@ app.include_router(search_router, prefix="/api")
 app.include_router(post_recommend_router, prefix="/api")
 app.include_router(home_router, prefix="/api")
 app.include_router(edit_request_router, prefix="/api")
+app.include_router(progress_router, prefix="/api")

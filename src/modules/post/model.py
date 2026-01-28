@@ -7,6 +7,16 @@ from datetime import datetime, timezone
 from src.modules.common.enums import PostState, PostStatus, PostCategory
 
 
+
+class PostEmbedding(Base):
+    __tablename__ = "post_embedding"
+
+    post_id = Column(UUID(as_uuid=True), ForeignKey("post.id"), primary_key=True)
+    embedding = Column(Text, nullable=True)
+
+    post = relationship("Post", back_populates="embedding_data")
+
+
 class Post(Base):
     __tablename__ = "post"
 
@@ -24,7 +34,6 @@ class Post(Base):
     post_header = Column(String, nullable=False)
     post_description = Column(String, nullable=True)
     supporter = Column(Integer, default=0)
-    embedding = Column(Text, nullable=True)
     
     user = relationship("User", back_populates="posts")
     campaigns = relationship("Campaign", back_populates="post", cascade="all, delete")
@@ -32,6 +41,8 @@ class Post(Base):
     comments = relationship("Comment", back_populates="post", cascade="all, delete-orphan")
     models = relationship("Model", back_populates="post", cascade="all, delete")
     progress = relationship("Progress", back_populates="post", cascade="all, delete-orphan")
+    
+    embedding_data = relationship("PostEmbedding", uselist=False, back_populates="post", cascade="all, delete-orphan")
 
     images = relationship(
         "Image",

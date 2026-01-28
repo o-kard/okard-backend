@@ -1,6 +1,6 @@
 import json
 from src.database.db import SessionLocal
-from src.modules.post.model import Post
+from src.modules.post.model import Post, PostEmbedding
 from src.modules.recommend.encoder import encode_texts
 
 def generate_post_embedding(post_id):
@@ -24,7 +24,13 @@ def generate_post_embedding(post_id):
         )
 
         emb = encode_texts([text])[0]
-        post.embedding = json.dumps(emb)
+        emb_json = json.dumps(emb)
+
+        if post.embedding_data:
+            post.embedding_data.embedding = emb_json
+        else:
+            post.embedding_data = PostEmbedding(embedding=emb_json)
+        
         db.commit()
     finally:
         db.close()

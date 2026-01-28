@@ -1,6 +1,8 @@
 from sqlalchemy.orm import Session
-from src.modules.post.model import Post
+from src.modules.post.model import Post, PostEmbedding
 from src.modules.post_view.model import UserPostView
+from sqlalchemy.sql.expression import func
+from src.modules.common.enums import PostState
 
 def get_recent_viewed_post_embeddings(
     db: Session,
@@ -8,12 +10,14 @@ def get_recent_viewed_post_embeddings(
     limit: int,
 ):
     return (
-        db.query(Post.id, Post.embedding)
+        db.query(Post.id, PostEmbedding.embedding)
         .join(UserPostView, UserPostView.post_id == Post.id)
+        .join(PostEmbedding, Post.embedding_data)
         .filter(
             UserPostView.user_id == user_id,
-            Post.embedding.isnot(None),
+            PostEmbedding.embedding.isnot(None),
             Post.user_id != user_id,
+            Post.state == PostState.published,
         )
         .order_by(UserPostView.viewed_at.desc())
         .limit(limit)
@@ -32,21 +36,26 @@ def get_seen_post_ids(db: Session, user_id):
 
 def get_candidate_post_embeddings(db: Session, user_id):
     return (
-        db.query(Post.id, Post.embedding)
+        db.query(Post.id, PostEmbedding.embedding)
+        .join(PostEmbedding, Post.embedding_data)
         .filter(
-            Post.embedding.isnot(None),
+            PostEmbedding.embedding.isnot(None),
             Post.user_id != user_id,
+            Post.state == PostState.published,
         )
         .all()
     )
-
 
 def get_fallback_popular_post_ids(db: Session, limit: int):
     return [
         pid for (pid,) in
         db.query(Post.id)
-        .filter(Post.embedding.isnot(None))
-        .order_by(Post.supporter.desc(), Post.created_at.desc())
+        .join(PostEmbedding, Post.embedding_data)
+        .filter(
+            PostEmbedding.embedding.isnot(None),
+            Post.state == PostState.published,
+        )
+        .order_by(func.random())
         .limit(limit)
         .all()
     ]
@@ -55,7 +64,7 @@ def get_posts_by_ids(db: Session, post_ids: list[str]):
     if not post_ids:
         return []
 
-    ordering = {pid: i for i, pid in enumerate(post_ids)}
+    ordering = {str(pid): i for i, pid in enumerate(post_ids)}
 
     posts = (
         db.query(Post)

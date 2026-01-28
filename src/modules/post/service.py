@@ -66,8 +66,15 @@ def verify_post_owner(db: Session, post_id: UUID, clerk_id: str) -> model.Post:
         raise HTTPException(status_code=403, detail="Permission denied")
     return post
 
-def list_posts(db: Session):
-    return repo.list_posts(db)
+def list_posts(
+    db: Session,
+    category: str | None = None,
+    q: str | None = None,
+    sort: str | None = None,
+    state: str | None = "published",
+    status: str | None = "active"
+):
+    return repo.list_posts(db, category, q, sort, state, status)
 
 def get_post(db: Session, post_id: UUID):
     post = repo.get_post(db, post_id)
