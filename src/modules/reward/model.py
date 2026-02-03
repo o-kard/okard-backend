@@ -23,11 +23,11 @@ class Reward(Base):
 
     post = relationship("Post", back_populates="rewards")  
 
-    images = relationship(
-        "Image",
-        secondary="imageHandler",
-        primaryjoin="and_(Reward.id==ImageHandler.reference_id, ImageHandler.type=='reward')",
-        secondaryjoin="ImageHandler.image_id==Image.id",
-        order_by="Image.display_order",
+    media = relationship(
+        "Media",
+        secondary="media_handler",
+        primaryjoin="and_(Reward.id==MediaHandler.reference_id, MediaHandler.type=='reward')",
+        secondaryjoin="MediaHandler.media_id==Media.id",
+        order_by="Media.display_order",
         viewonly=True,
     )

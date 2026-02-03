@@ -9,7 +9,7 @@ from src.modules.notification import service as notification_service, schema as 
 from src.modules.common.enums import NotificationType, EditRequestStatus, VoteDecision, PostState
 from src.modules.post import service as post_service, schema as post_schema, repo as post_repo, model as post_model
 from src.modules.reward import repo as reward_repo, schema as reward_schema
-from src.modules.image import repo as image_repo
+from src.modules.media import repo as media_repo
 
 def _generate_display_changes(post: post_model.Post, proposed_changes: dict) -> str:
     lines = []
@@ -213,13 +213,13 @@ async def cast_vote(db: Session, edit_request_id: UUID, user_id: UUID, data: sch
                         if rid not in incoming_ids:
                             reward_repo.delete_reward(db, r_obj)
                             
-                    # 4. Create or Update
-                    from src.modules.image import model as image_model
+                            # 4. Create or Update
+                    from src.modules.media import model as media_model
                     from src.modules.common.enums import ReferenceType
                     
                     for index, item in enumerate(rewards_payload):
                         # Clean item
-                        img_id_str = item.get("image_id")
+                        media_id_str = item.get("image_id")
                         # Remove UI flags and handled fields
                         # Also remove 'backup_amount' as it is computed/readonly usually
                         data_dict = {
@@ -249,25 +249,25 @@ async def cast_vote(db: Session, edit_request_id: UUID, user_id: UUID, data: sch
                             new_reward = reward_repo.create_reward(db, create_schema)
                             target_reward_id = new_reward.id
 
-                        # Handle Image Linking if image_id is present
-                        if img_id_str and target_reward_id:
+                        # Handle Media Linking if image_id is present
+                        if media_id_str and target_reward_id:
                             try:
-                                img_id = UUID(str(img_id_str))
-                                image_obj = image_repo.get_image(db, img_id)
-                                if image_obj:
-                                    # Create ImageHandler link
-                                    # Clean up old handlers for this image
-                                    db.query(image_model.ImageHandler).filter(image_model.ImageHandler.image_id == img_id).delete()
+                                media_id = UUID(str(media_id_str))
+                                media_obj = media_repo.get_media(db, media_id)
+                                if media_obj:
+                                    # Create MediaHandler link
+                                    # Clean up old handlers for this media
+                                    db.query(media_model.MediaHandler).filter(media_model.MediaHandler.media_id == media_id).delete()
                                     
-                                    new_handler = image_model.ImageHandler(
-                                        image_id=img_id,
+                                    new_handler = media_model.MediaHandler(
+                                        media_id=media_id,
                                         reference_id=target_reward_id,
                                         type=ReferenceType.reward
                                     )
                                     db.add(new_handler)
                                     
                             except Exception as e:
-                                print(f"Failed to link image {img_id_str} to reward {target_reward_id}: {e}")
+                                print(f"Failed to link media {media_id_str} to reward {target_reward_id}: {e}")
 
                 # 2. Update Post Columns
                 if changes:

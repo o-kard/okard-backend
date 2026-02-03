@@ -25,11 +25,11 @@ class Progress(Base):
 
     post = relationship("Post", back_populates="progress")
 
-    images = relationship(
-        "Image",
-        secondary="imageHandler",
-        primaryjoin="and_(Progress.id==ImageHandler.reference_id, ImageHandler.type=='progress')",
-        secondaryjoin="ImageHandler.image_id==Image.id",
-        order_by="Image.display_order",
+    media = relationship(
+        "Media",
+        secondary="media_handler",
+        primaryjoin="and_(Progress.id==MediaHandler.reference_id, MediaHandler.type=='progress')",
+        secondaryjoin="MediaHandler.media_id==Media.id",
+        order_by="Media.display_order",
         viewonly=True,
     )

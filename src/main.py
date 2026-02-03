@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from src.modules.test import model as test_model
 from src.modules.post import model as post_model
-from src.modules.image import model as image_model
+from src.modules.media import model as media_model
 from src.modules.user import model as user_model
 from src.modules.campaign import model as campaign_model
 from src.modules.reward import model as reward_model
@@ -19,7 +19,7 @@ from src.modules.progress import model as progress_model
 
 from src.modules.test.controller import router as test_router
 from src.modules.post.controller import router as post_router
-from src.modules.image.controller import router as image_router
+from src.modules.media.controller import router as media_router
 from src.modules.user.controller import router as user_router
 from src.modules.creator.controller import router as creator_router
 from src.modules.country.controller import router as country_router
@@ -88,7 +88,7 @@ app.include_router(test_router, prefix="/api")
 app.include_router(for_you_router, prefix="/api")
 app.include_router(post_router, prefix="/api")
 app.include_router(user_router, prefix="/api")
-app.include_router(image_router, prefix="/api")
+app.include_router(media_router, prefix="/api")
 app.include_router(country_router, prefix="/api")
 app.include_router(payment_router, prefix="/api")
 app.include_router(comment_router, prefix="/api")

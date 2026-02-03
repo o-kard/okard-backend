@@ -6,7 +6,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 from uuid import UUID
 from . import repo, schema, model
-from src.modules.image import  service as image_service, repo as image_repo
+from src.modules.media import  service as media_service, repo as media_repo
 from src.modules.contributor import model as contributor_model
 from pathlib import Path
 import os
@@ -14,7 +14,7 @@ import uuid
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 
-UPLOAD_DIR = BASE_DIR / "uploads" / "images"
+UPLOAD_DIR = BASE_DIR / "uploads" / "media"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 def _abs(rel: str) -> str:
@@ -35,7 +35,7 @@ def update_reward(db: Session, reward_id: UUID, reward_data: schema.RewardUpdate
     return repo.update_reward(db, db_reward, reward_data)
 
 
-async def create_reward_with_images(
+async def create_reward_with_media(
     db: Session,
     reward_data: List[schema.RewardCreate],
     files: List[UploadFile]
@@ -43,12 +43,12 @@ async def create_reward_with_images(
     db_rewards = []
     for data in reward_data:
         db_reward = repo.create_reward(db, data)
-        await image_service._save_files_and_create_images(
+        await media_service._save_files_and_create_media(
             db,
             parent_type="reward",
             parent_id=db_reward.id,
             files=files,                       
-            images_manifest=None,              
+            media_manifest=None,              
         )
 
         db_rewards.append(db_reward)
@@ -58,7 +58,7 @@ async def create_reward_with_images(
 
     return db_rewards
 
-async def update_reward_with_images(
+async def update_reward_with_media(
     db: Session,
     reward_id: UUID,
     reward_data: schema.RewardUpdate,
@@ -70,21 +70,21 @@ async def update_reward_with_images(
     if not files:
         return db_reward
 
-    for image in list(db_reward.images):
-        if image.path:
-            ap = _abs(image.path)
+    for media in list(db_reward.media):
+        if media.path:
+            ap = _abs(media.path)
             if os.path.exists(ap):
                 os.remove(ap)
-        image_repo.delete_image(db, image)
+        media_repo.delete_media(db, media)
     db.commit()
     
 
-    await image_service._save_files_and_create_images(
+    await media_service._save_files_and_create_media(
         db,
         parent_type="reward",
         parent_id=db_reward.id,
         files=files,
-        images_manifest=None
+        media_manifest=None
     )
     calculate_backup_amounts_for_post(db, db_reward.post_id)
 
@@ -94,12 +94,12 @@ async def update_reward_with_images(
 def delete_reward(db: Session, reward_id: UUID):
     db_reward = get_reward(db, reward_id)
     
-    for image in list(db_reward.images):
-        if image.path:
-            ap = _abs(image.path)
+    for media in list(db_reward.media):
+        if media.path:
+            ap = _abs(media.path)
             if os.path.exists(ap):
                 os.remove(ap)
-        image_repo.delete_image(db, image)
+        media_repo.delete_media(db, media)
     
     calculate_backup_amounts_for_post(db, db_reward.post_id)
     return repo.delete_reward(db, db_reward)

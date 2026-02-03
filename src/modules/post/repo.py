@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session, joinedload
 from . import model, schema
 from uuid import UUID
 from src.modules.campaign import model as camp_model
-from src.modules.image import model as image_model
+from src.modules.media import model as media_model
 from src.modules.reward import model as reward_model
 from src.modules.user import model as user_model
 
@@ -21,10 +21,10 @@ def list_posts(
     user_id: UUID | None = None
 ):
     query = db.query(model.Post).options(
-        joinedload(Post.user).load_only(user_model.User.username).joinedload(user_model.User.image),
-        joinedload(model.Post.images),
-        joinedload(model.Post.campaigns).joinedload(camp_model.Campaign.images), 
-        joinedload(model.Post.rewards).joinedload(reward_model.Reward.images),
+        joinedload(Post.user).load_only(user_model.User.username).joinedload(user_model.User.media),
+        joinedload(model.Post.media),
+        joinedload(model.Post.campaigns).joinedload(camp_model.Campaign.media), 
+        joinedload(model.Post.rewards).joinedload(reward_model.Reward.media),
     )
 
     if user_id:
@@ -66,10 +66,10 @@ def get_post(db: Session, post_id):
     return (
         db.query(model.Post)
         .options( 
-            joinedload(Post.user).load_only(user_model.User.username).joinedload(user_model.User.image),
-            joinedload(model.Post.images),
-            joinedload(model.Post.campaigns).joinedload(camp_model.Campaign.images),
-            joinedload(model.Post.rewards).joinedload(reward_model.Reward.images),
+            joinedload(Post.user).load_only(user_model.User.username).joinedload(user_model.User.media),
+            joinedload(model.Post.media),
+            joinedload(model.Post.campaigns).joinedload(camp_model.Campaign.media),
+            joinedload(model.Post.rewards).joinedload(reward_model.Reward.media),
         )
         .filter(model.Post.id == post_id)
         .first()

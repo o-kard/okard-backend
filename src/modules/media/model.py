@@ -5,8 +5,8 @@ from sqlalchemy.orm import relationship
 from src.database.db import Base
 from src.modules.common.enums import ReferenceType
 
-class Image(Base):
-    __tablename__ = "image"
+class Media(Base):
+    __tablename__ = "media"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     display_order = Column(Integer, nullable=False, default=0)
@@ -14,16 +14,17 @@ class Image(Base):
     media_type = Column(String)
     file_size = Column(BigInteger)
     path = Column(String)
+    thumbnail_path = Column(String, nullable=True)
 
-class ImageHandler(Base):
-    __tablename__ = "imageHandler"
+class MediaHandler(Base):
+    __tablename__ = "media_handler"
 
-    image_id = Column(UUID(as_uuid=True), ForeignKey("image.id"), primary_key=True)
+    media_id = Column(UUID(as_uuid=True), ForeignKey("media.id"), primary_key=True)
     reference_id = Column(UUID(as_uuid=True), primary_key=True)
     type = Column(Enum(ReferenceType), primary_key=True)
 
     __table_args__ = (
-        PrimaryKeyConstraint('image_id', 'reference_id', 'type'),
+        PrimaryKeyConstraint('media_id', 'reference_id', 'type'),
     )
 
-    image = relationship("Image")
+    media = relationship("Media")

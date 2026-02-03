@@ -3,7 +3,7 @@ from uuid import UUID
 from datetime import datetime
 from typing import Optional, List
 from src.modules.common.enums import ReportType, ReportStatus
-from src.modules.image.schema import ImageOut
+from src.modules.media.schema import MediaOut
 
 class ReportBase(BaseModel):
     post_id: Optional[UUID] = None
@@ -21,7 +21,7 @@ class ReportOut(ReportBase):
     admin_notes: Optional[str] = None
     created_at: datetime
     resolved_at: Optional[datetime] = None
-    files: List[ImageOut] = []
+    files: List[MediaOut] = []
     
     class Config:
         from_attributes = True

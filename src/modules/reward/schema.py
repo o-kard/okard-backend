@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from uuid import UUID
 from datetime import datetime
 from typing import Optional, List
-from src.modules.image.schema import ImageOut
+from src.modules.media.schema import MediaOut
 
 class RewardBase(BaseModel):
     reward_header: Optional[str] = None    
@@ -25,6 +25,6 @@ class RewardUpdate(BaseModel):
 class RewardOut(RewardBase):
     id: UUID
     created_at: datetime
-    images: List[ImageOut] = []              
+    media: List[MediaOut] = []              
     class Config:
         from_attributes = True

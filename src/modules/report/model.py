@@ -21,10 +21,10 @@ class Report(Base):
     resolved_at = Column(DateTime(timezone=True), nullable=True)
 
     files = relationship(
-        "Image",
-        secondary="imageHandler",
-        primaryjoin="and_(Report.id==ImageHandler.reference_id, ImageHandler.type=='report')",
-        secondaryjoin="ImageHandler.image_id==Image.id",
-        order_by="Image.display_order",
+        "Media",
+        secondary="media_handler",
+        primaryjoin="and_(Report.id==MediaHandler.reference_id, MediaHandler.type=='report')",
+        secondaryjoin="MediaHandler.media_id==Media.id",
+        order_by="Media.display_order",
         viewonly=True,
     )

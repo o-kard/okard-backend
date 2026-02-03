@@ -9,7 +9,7 @@ from src.modules.auth import get_current_user
 from . import service, schema
 from src.modules.user import schema as userSchema
 from src.modules.user import service as userService
-from src.modules.image import service as imageService
+from src.modules.media import service as mediaService
 from src.modules.creator_verification_doc import service as verificationDocService
 from src.modules.common.enums import UserRole, VerificationDocType
 

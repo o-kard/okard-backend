@@ -45,11 +45,11 @@ class Post(Base):
     embedding_data = relationship("PostEmbedding", uselist=False, back_populates="post", cascade="all, delete-orphan")
     contributors = relationship("Contributor", back_populates="post", cascade="all, delete-orphan")
 
-    images = relationship(
-        "Image",
-        secondary="imageHandler",
-        primaryjoin="and_(Post.id==ImageHandler.reference_id, ImageHandler.type=='post')",
-        secondaryjoin="ImageHandler.image_id==Image.id",
-        order_by="Image.display_order",
+    media = relationship(
+        "Media",
+        secondary="media_handler",
+        primaryjoin="and_(Post.id==MediaHandler.reference_id, MediaHandler.type=='post')",
+        secondaryjoin="MediaHandler.media_id==Media.id",
+        order_by="Media.display_order",
         viewonly=True,
     )

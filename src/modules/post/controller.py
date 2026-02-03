@@ -49,9 +49,12 @@ def get_post(post_id: UUID, clerk_id: str | None = Query(None), db: Session = De
         raise HTTPException(status_code=404, detail="Not found")
 
     if clerk_id:
-        user = get_user_by_clerk_id(db, clerk_id)
-        if user:
-            log_post_view(db, user.id, post_id)
+        try:
+            user = get_user_by_clerk_id(db, clerk_id)
+            if user:
+                log_post_view(db, user.id, post_id)
+        except Exception as e:
+            print(f"Error logging view: {e}")
 
     return post
 
@@ -66,27 +69,27 @@ def delete(post_id: UUID,clerk_id: str = Query(...), db: Session = Depends(get_d
 @router.post("/with-campaigns", response_model=schema.PostOut)
 async def create(
     post_data: str = Form(...),
-    images: Union[List[UploadFile], UploadFile, None] = File(None),
-    images_manifest: Union[str, None] = Form(None),
+    media: Union[List[UploadFile], UploadFile, None] = File(None),
+    media_manifest: Union[str, None] = Form(None),
     campaigns: Union[str, None] = Form(None),                                  
-    campaign_images: Union[List[UploadFile], UploadFile, None] = File(None),
+    campaign_media: Union[List[UploadFile], UploadFile, None] = File(None),
     rewards: Union[str, None] = Form(None),                     
-    reward_images: Union[List[UploadFile], UploadFile, None] = File(None),     
+    reward_media: Union[List[UploadFile], UploadFile, None] = File(None),     
     clerk_id: str = Query(...),
     db: Session = Depends(get_db),
     background_tasks: BackgroundTasks = None,
 ):
-    # print("post_images:", len(images or []))
-    # print("create_campaigns:", len(campaigns or []), "camp_files:", len(campaign_images or []))
+    # print("post_media:", len(media or []))
+    # print("create_campaigns:", len(campaigns or []), "camp_files:", len(campaign_media or []))
     
     try:
         post_obj = schema.PostCreate(**json.loads(post_data))
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid post_data")
 
-    post_img_list: Optional[List[UploadFile]] = None
-    if images is not None:
-        post_img_list = images if isinstance(images, list) else [images]
+    post_media_list: Optional[List[UploadFile]] = None
+    if media is not None:
+        post_media_list = media if isinstance(media, list) else [media]
 
     camp_list_raw = None
     if campaigns:
@@ -96,13 +99,13 @@ async def create(
             if not isinstance(it, dict) or "display_order" not in it: raise HTTPException(status_code=400, detail="Invalid campaigns payload")
         camp_list_raw = parsed
 
-    camp_img_list: Optional[List[UploadFile]] = None
-    if campaign_images is not None:
-        camp_img_list = campaign_images if isinstance(campaign_images, list) else [campaign_images]
+    camp_media_list: Optional[List[UploadFile]] = None
+    if campaign_media is not None:
+        camp_media_list = campaign_media if isinstance(campaign_media, list) else [campaign_media]
 
     if camp_list_raw is not None:
-        if not camp_img_list or len(camp_img_list) != len(camp_list_raw):
-            raise HTTPException(status_code=400, detail="campaign_images must match campaigns count (1:1).")
+        if not camp_media_list or len(camp_media_list) != len(camp_list_raw):
+            raise HTTPException(status_code=400, detail="campaign_media must match campaigns count (1:1).")
 
     reward_list_raw = None
     if rewards:
@@ -112,23 +115,23 @@ async def create(
             if not isinstance(it, dict) or "display_order" not in it: raise HTTPException(status_code=400, detail="Invalid rewards payload")
         reward_list_raw = parsed
 
-    reward_img_list = None
-    if reward_images is not None:
-        reward_img_list = reward_images if isinstance(reward_images, list) else [reward_images]
+    reward_media_list = None
+    if reward_media is not None:
+        reward_media_list = reward_media if isinstance(reward_media, list) else [reward_media]
 
     if reward_list_raw is not None:
-        if not reward_img_list or len(reward_img_list) != len(reward_list_raw):
-            raise HTTPException(status_code=400, detail="reward_images must match rewards count (1:1).")
+        if not reward_media_list or len(reward_media_list) != len(reward_list_raw):
+            raise HTTPException(status_code=400, detail="reward_media must match rewards count (1:1).")
         
-    post_img_list = images if isinstance(images, list) else ([images] if images else [])
-    manifest = json.loads(images_manifest) if images_manifest else []
+    post_media_list = media if isinstance(media, list) else ([media] if media else [])
+    manifest = json.loads(media_manifest) if media_manifest else []
         
     post = await service.create_post(
         db=db, clerk_id=clerk_id, post_data=post_obj,
-        post_images=post_img_list,
-        post_images_manifest=manifest,
-        campaigns=camp_list_raw, campaign_images=camp_img_list,
-        rewards=reward_list_raw, reward_images=reward_img_list,
+        post_media=post_media_list,
+        post_media_manifest=manifest,
+        campaigns=camp_list_raw, campaign_media=camp_media_list,
+        rewards=reward_list_raw, reward_media=reward_media_list,
     )
     
         # ✅ async embedding
@@ -142,15 +145,15 @@ async def create(
 async def update(
     post_id: UUID,
     post_data: Union[str, None] = Form(None),
-    images: Union[List[UploadFile], UploadFile, None] = File(None),              
+    media: Union[List[UploadFile], UploadFile, None] = File(None),              
     campaigns: Union[str, None] = Form(None),                                 
-    campaign_images: Union[List[UploadFile], UploadFile, None] = File(None),
+    campaign_media: Union[List[UploadFile], UploadFile, None] = File(None),
     rewards: Union[str, None] = Form(None),                                 
-    reward_images: Union[List[UploadFile], UploadFile, None] = File(None),          
+    reward_media: Union[List[UploadFile], UploadFile, None] = File(None),          
     clerk_id: str = Query(...),
     db: Session = Depends(get_db),
-    images_manifest: Union[str, None] = Form(None),         
-    images_reorder: Union[str, None] = Form(None),   
+    media_manifest: Union[str, None] = Form(None),         
+    media_reorder: Union[str, None] = Form(None),   
     background_tasks: BackgroundTasks = None,
 ):
     # --- parse post_data ---
@@ -161,18 +164,18 @@ async def update(
         except Exception:
             raise HTTPException(status_code=400, detail="Invalid post_data")
 
-    # --- normalize images fields ---
-    post_img_list: Optional[List[UploadFile]] = None
-    if images is not None:
-        post_img_list = images if isinstance(images, list) else [images]
+    # --- normalize media fields ---
+    post_media_list: Optional[List[UploadFile]] = None
+    if media is not None:
+        post_media_list = media if isinstance(media, list) else [media]
 
-    camp_img_list: Optional[List[UploadFile]] = None
-    if campaign_images is not None:
-        camp_img_list = campaign_images if isinstance(campaign_images, list) else [campaign_images]
+    camp_media_list: Optional[List[UploadFile]] = None
+    if campaign_media is not None:
+        camp_media_list = campaign_media if isinstance(campaign_media, list) else [campaign_media]
 
-    reward_img_list: Optional[List[UploadFile]] = None
-    if reward_images is not None:
-        reward_img_list = reward_images if isinstance(reward_images, list) else [reward_images]
+    reward_media_list: Optional[List[UploadFile]] = None
+    if reward_media is not None:
+        reward_media_list = reward_media if isinstance(reward_media, list) else [reward_media]
 
     # --- parse campaigns manifest (list[dict]) ---
     camp_payload = None
@@ -191,9 +194,9 @@ async def update(
             if not isinstance(it, dict) or "display_order" not in it: raise HTTPException(status_code=400, detail="Invalid rewards payload")
         reward_payload = parsed
 
-    post_img_list = images if isinstance(images, list) else ([images] if images else None)
-    img_manifest = json.loads(images_manifest) if images_manifest else None
-    reorder_list = json.loads(images_reorder) if images_reorder else None
+    post_media_list = media if isinstance(media, list) else ([media] if media else None)
+    media_manifest_parsed = json.loads(media_manifest) if media_manifest else None
+    reorder_list = json.loads(media_reorder) if media_reorder else None
 
     # --- call service ---
     post = await service.update_post(
@@ -201,13 +204,13 @@ async def update(
         post_id=post_id,
         clerk_id=clerk_id,
         post_data=post_upd,
-        post_images=post_img_list,    
+        post_media=post_media_list,    
         campaigns_payload=camp_payload,  
-        campaign_images=camp_img_list,
+        campaign_media=camp_media_list,
         rewards_payload=reward_payload,  
-        reward_images=reward_img_list,
-        post_images_manifest=img_manifest,           
-        post_images_reorder=reorder_list, 
+        reward_media=reward_media_list,
+        post_media_manifest=media_manifest_parsed,           
+        post_media_reorder=reorder_list, 
     )
     # ✅ ถ้ามี post_data แปลว่า content อาจเปลี่ยน → regenerate embedding
     if background_tasks and post_data:

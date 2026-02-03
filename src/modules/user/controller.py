@@ -9,8 +9,8 @@ from sqlalchemy.orm import Session
 from . import schema, service
 from src.modules.auth import get_current_user
 from src.database.db import get_db
-from src.modules.image.schema import ImageOut
-from src.modules.image.service import create_image_from_upload, delete_image
+from src.modules.media.schema import MediaOut
+from src.modules.media.service import create_media_from_upload, delete_media
 from src.modules.common.clerk_helper import update_clerk_user_password
 from src.modules.creator.schema import CreatorUpdate
 
@@ -19,9 +19,9 @@ router = APIRouter(prefix="/user", tags=["user"])
 @router.post("", response_model=schema.UserResponse)
 async def create_user(
     data: str = Form(...), 
-    image: Optional[UploadFile] = File(None),
-    password: Optional[str] = Form(None),
+    media: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
+    password: Optional[str] = Form(None),
     payload: dict = Depends(get_current_user),
 ):
     try:
@@ -41,11 +41,11 @@ async def create_user(
             raise HTTPException(status_code=500, detail="Failed to set password")
 
     user_response = await service.create_user_from_clerk(db, user_obj)
-    if image:
-        image_response = await create_image_from_upload(
+    if media:
+        media_response = await create_media_from_upload(
             db, 
-            file=image, 
-            clerk_id=clerk_id
+            file=media, 
+            clerk_id=user_response.clerk_id
         )
         
     return user_response
@@ -53,7 +53,7 @@ async def create_user(
 @router.put("/update", response_model=schema.UserResponse)
 async def update_user(
     data: str = Form(...), 
-    image: Optional[UploadFile] = File(None),
+    media: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
     payload: dict = Depends(get_current_user),
 ):
@@ -68,20 +68,20 @@ async def update_user(
     try:
         user_obj = schema.UserUpdate(**parsed_data['user'])
         creator_obj = CreatorUpdate(**parsed_data['creator'])
-        remove_image = user_obj.remove_image
+        remove_media = user_obj.remove_media
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid user data")
     
     clerk_id = payload["sub"]
     user_response = await service.update_profile(db, clerk_id, user_obj, creator_obj)
     if image:
-        await create_image_from_upload(
+        await create_media_from_upload(
             db, 
-            file=image,
+            file=media,
             clerk_id=clerk_id
         )
-    elif remove_image and user_response.image:
-        await delete_image(db, user_response.image.id)
+    elif remove_media and user_response.media:
+        delete_media(db, user_response.media.id)
         
     return user_response
 

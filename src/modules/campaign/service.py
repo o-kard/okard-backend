@@ -5,14 +5,14 @@ from fastapi import  UploadFile
 from sqlalchemy.orm import Session
 from uuid import UUID
 from . import repo, schema, model
-from src.modules.image import model as image_model, repo as image_repo, service as image_service
+from src.modules.media import model as media_model, repo as media_repo, service as media_service
 from pathlib import Path
 import os
 import uuid
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 
-UPLOAD_DIR = BASE_DIR / "uploads" / "images"
+UPLOAD_DIR = BASE_DIR / "uploads" / "media"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 def _abs(rel: str) -> str:
@@ -33,7 +33,7 @@ def update_campaign(db: Session, campaign_id: UUID, campaign_data: schema.Campai
     return repo.update_campaign(db, db_campaign, campaign_data)
 
 
-async def create_campaign_with_images(
+async def create_campaign_with_media(
     db: Session,
     campaign_data: List[schema.CampaignCreate],
     files: List[UploadFile]
@@ -41,12 +41,12 @@ async def create_campaign_with_images(
     db_campaigns = []
     for data in campaign_data:
         db_campaign = repo.create_campaign(db, data)
-        await image_service._save_files_and_create_images(
+        await media_service._save_files_and_create_media(
             db,
             parent_type="campaign",
             parent_id=db_campaign.id,
             files=files,                       
-            images_manifest=None,             
+            media_manifest=None,             
         )
         db_campaigns.append(db_campaign)
     return db_campaigns
@@ -54,7 +54,7 @@ async def create_campaign_with_images(
 
 
 # campaign/service.py
-async def update_campaign_with_images(db: Session, campaign_id: UUID,
+async def update_campaign_with_media(db: Session, campaign_id: UUID,
                                       campaign_data: schema.CampaignUpdate,
                                       files: Optional[List[UploadFile]] = None):
     db_campaign = get_campaign(db, campaign_id)
@@ -64,20 +64,20 @@ async def update_campaign_with_images(db: Session, campaign_id: UUID,
     if not files:
         return db_campaign
 
-    for image in list(db_campaign.images):
-        if image.path:
-            ap = _abs(image.path)
+    for media in list(db_campaign.media):
+        if media.path:
+            ap = _abs(media.path)
             if os.path.exists(ap):
                 os.remove(ap)
-        image_repo.delete_image(db, image)
+        media_repo.delete_media(db, media)
     db.commit()
 
-    await image_service._save_files_and_create_images(
+    await media_service._save_files_and_create_media(
         db,
         parent_type="campaign",
         parent_id=db_campaign.id,
         files=files,
-        images_manifest=None
+        media_manifest=None
     )
 
     return db_campaign
@@ -87,11 +87,11 @@ async def update_campaign_with_images(db: Session, campaign_id: UUID,
 def delete_campaign(db: Session, campaign_id: UUID):
     db_campaign = get_campaign(db, campaign_id)
     
-    for image in list(db_campaign.images):
-        if image.path:
-            ap = _abs(image.path)
+    for media in list(db_campaign.media):
+        if media.path:
+            ap = _abs(media.path)
             if os.path.exists(ap):
                 os.remove(ap)
-        image_repo.delete_image(db, image)
+        media_repo.delete_media(db, media)
 
     return repo.delete_campaign(db, db_campaign)

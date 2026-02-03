@@ -14,10 +14,10 @@ from src.modules.common.enums import ReferenceType
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 
-UPLOAD_DIR = BASE_DIR / "uploads" / "images"
+UPLOAD_DIR = BASE_DIR / "uploads" / "media"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
-async def create_image_from_upload(
+async def create_media_from_upload(
     db: Session, 
     file: UploadFile,
     post_id: Optional[UUID] = None,
@@ -33,10 +33,9 @@ async def create_image_from_upload(
         user_id = user.id
         print(f"User found: {user_id}")
         
-        # Check existing image via handler
-        # Assuming user has 'image' relationship working
-        if user.image:
-           old_path = user.image.path
+        # Check existing media via handler
+        if user.media:
+           old_path = user.media.path
            if old_path:
                abs_old_path = BASE_DIR / old_path.lstrip("/")
                try:
@@ -44,14 +43,7 @@ async def create_image_from_upload(
                        abs_old_path.unlink()
                except Exception:
                    pass
-           # We need to delete the Image object. Cascade should handle handler?
-           # If cascade is not set on handler FK, we might need to delete handler manually or rely on image deletion cascading to handler?
-           # ImageHandler has FK to Image. If we delete Image, handler should be deleted?
-           # Wait, check DB definition: creating FK... ondelete is default (No Action).
-           # So deleting Image might fail if Handler exists! 
-           # We should delete handler first or Image.
-           # Actually, usually getting the image object and deleting it requires cleaning dependencies.
-           repo.delete_image(db, user.image)
+           repo.delete_media(db, user.media)
 
         ref_id = user.id
         ref_type = ReferenceType.user
@@ -70,54 +62,54 @@ async def create_image_from_upload(
     with open(file_path, "wb") as f:
         f.write(content)
 
-    img_id = uuid4()
-    db_image = model.Image(
-        id=img_id,
+    media_id = uuid4()
+    db_media = model.Media(
+        id=media_id,
         orig_name=file.filename,
         media_type=file.content_type,
         file_size=len(content),
-        path=f"/uploads/images/{file_name}",
+        path=f"/uploads/media/{file_name}",
         display_order=0 
     )
-    repo.create_image(db, db_image)
+    repo.create_media(db, db_media)
 
     # Create handler
-    handler = model.ImageHandler(
-        image_id=img_id,
+    handler = model.MediaHandler(
+        media_id=media_id,
         reference_id=ref_id,
         type=ref_type
     )
     db.add(handler)
     db.commit()
 
-    return db_image
+    return db_media
 
-async def list_images(db: Session):
-    return repo.list_images(db)
+def list_media(db: Session):
+    return repo.list_media(db)
 
-async def get_image_or_404(db: Session, image_id: UUID):
-    image = repo.get_image(db, image_id)
-    if not image:
-        raise ValueError("Image not found")
-    return image
+def get_media_or_404(db: Session, media_id: UUID):
+    media = repo.get_media(db, media_id)
+    if not media:
+        raise ValueError("Media not found")
+    return media
 
-async def delete_image(db: Session, image_id: UUID):
-    db_image = await get_image_or_404(db, image_id)
-    return repo.delete_image(db, db_image)
+def delete_media(db: Session, media_id: UUID):
+    db_media = get_media_or_404(db, media_id)
+    return repo.delete_media(db, db_media)
 
-async def _save_files_and_create_images(
+async def _save_files_and_create_media(
     db: Session,
     parent_type: str,          
     parent_id: UUID,
     files: List[UploadFile],
-    images_manifest: Optional[List[dict]] = None,  
+    media_manifest: Optional[List[dict]] = None,  
     start_index: int = 1,                           
 ):
-    saved_images = []
+    saved_media = []
 
     order_map: dict[str, int] = {}
-    if images_manifest:
-        for it in images_manifest:
+    if media_manifest:
+        for it in media_manifest:
             fn = (it.get("filename") or "").strip()
             if fn:
                 order_map[fn] = int(it.get("display_order") or start_index)
@@ -132,14 +124,14 @@ async def _save_files_and_create_images(
             f.write(content)
 
         img_order = order_map.get(file.filename, i)
-        img_id = uuid4()
+        media_id = uuid4()
 
-        image_kwargs = dict(
-            id=img_id,
+        media_kwargs = dict(
+            id=media_id,
             orig_name=file.filename,
             media_type=file.content_type or "application/octet-stream",
             file_size=len(content),
-            path=f"/uploads/images/{file_name}",
+            path=f"/uploads/media/{file_name}",
             display_order=img_order,  
         )
 
@@ -157,17 +149,17 @@ async def _save_files_and_create_images(
         else:
             raise ValueError(f"Unknown parent_type: {parent_type}")
 
-        image = model.Image(**image_kwargs)
-        repo.create_image(db, image)
+        media = model.Media(**media_kwargs)
+        repo.create_media(db, media)
 
-        handler = model.ImageHandler(
-            image_id=img_id,
+        handler = model.MediaHandler(
+            media_id=media_id,
             reference_id=parent_id,
             type=ref_type
         )
         db.add(handler)
         
-        saved_images.append(image)
+        saved_media.append(media)
     
     db.commit()
-    return saved_images
+    return saved_media

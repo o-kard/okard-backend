@@ -7,7 +7,7 @@ from sqlalchemy import Tuple
 from sqlalchemy.orm import Session
 from uuid import UUID
 from . import repo, schema, model
-from src.modules.image import model as image_model, repo as image_repo, service as image_service
+from src.modules.media import model as media_model, repo as media_repo, service as media_service
 from src.modules.campaign import schema as campaign_schema, service as campaign_service
 from src.modules.reward import schema as reward_schema, service as reward_service
 from src.modules.model import service as model_service, schema as model_schema, repo as model_repo
@@ -19,7 +19,7 @@ import uuid
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 
-UPLOAD_DIR = BASE_DIR / "uploads" / "images"
+UPLOAD_DIR = BASE_DIR / "uploads" / "media"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 def format_datetime(dt):
@@ -105,28 +105,28 @@ def change_post_status(db: Session, post_id: UUID, status: schema.PostStatus):
 def delete_post(db: Session, post_id: UUID):
     db_post = get_post(db, post_id)
 
-    for image in list(db_post.images):
-        if image.path:
-            ap = _abs(image.path)
+    for media in list(db_post.media):
+        if media.path:
+            ap = _abs(media.path)
             if os.path.exists(ap):
                 os.remove(ap)
-        image_repo.delete_image(db, image)
+        media_repo.delete_media(db, media)
 
     for camp in list(db_post.campaigns):
-        for image in list(camp.images):
-            if image.path:
-                ap = _abs(image.path)
+        for media in list(camp.media):
+            if media.path:
+                ap = _abs(media.path)
                 if os.path.exists(ap):
                     os.remove(ap)
-            image_repo.delete_image(db, image)
+            media_repo.delete_media(db, media)
     
     for reward in list(db_post.rewards):
-        for image in list(reward.images):
-            if image.path:
-                ap = _abs(image.path)
+        for media in list(reward.media):
+            if media.path:
+                ap = _abs(media.path)
                 if os.path.exists(ap):
                     os.remove(ap)
-            image_repo.delete_image(db, image)
+            media_repo.delete_media(db, media)
 
     return repo.delete_post(db, db_post)
 
@@ -136,12 +136,12 @@ async def create_post(
     *,
     clerk_id: str,
     post_data: schema.PostCreate,
-    post_images: Optional[List[UploadFile]] = None,
-    post_images_manifest: Optional[list[dict]] = None,
+    post_media: Optional[List[UploadFile]] = None,
+    post_media_manifest: Optional[list[dict]] = None,
     campaigns: Optional[List[dict]] = None, 
-    campaign_images: Optional[List[UploadFile]] = None,
+    campaign_media: Optional[List[UploadFile]] = None,
     rewards: Optional[List[dict]] = None,
-    reward_images: Optional[List[UploadFile]] = None,
+    reward_media: Optional[List[UploadFile]] = None,
 ):
     user = await get_user_by_clerk_id(db, clerk_id)
     if not user:
@@ -158,41 +158,41 @@ async def create_post(
         "end_date": format_datetime(post_data.effective_end_date),
         "country_displayable_name": country_service.get_country(db, user.country_id).en_name,
         "category_group": post_data.category.value if post_data.category else "other",
-        "has_video": 1,
-        "has_photo": 1 if post_images else 0,
+        "has_video": 0,
+        "has_photo": 1 if post_media else 0,
     }
 
     input_model = model_schema.InputData(**predict_input)
 
     await model_service.predict(db,input_model,db_post.id,True)
 
-    # 2) post images
-    await image_service._save_files_and_create_images(
+    # 2) post media
+    await media_service._save_files_and_create_media(
         db, parent_type="post", parent_id=db_post.id,
-        files=post_images or [], images_manifest=post_images_manifest or []
+        files=post_media or [], media_manifest=post_media_manifest or []
     )
 
     # 3) campaigns
     if campaigns:
-        files = campaign_images or []
+        files = campaign_media or []
 
         for idx, item in enumerate(campaigns):
             payload = {k: v for k, v in item.items() if k not in ["id", "isEdited"]}
             payload.setdefault("post_id", db_post.id)
             create_obj = campaign_schema.CampaignCreate(**payload)
 
-            await campaign_service.create_campaign_with_images(
+            await campaign_service.create_campaign_with_media(
                 db=db, campaign_data=[create_obj], files=[files[idx]]
             )
 
     if rewards:
-        rfiles = reward_images or []
+        rfiles = reward_media or []
         for idx, item in enumerate(rewards):
             payload = {k: v for k, v in item.items() if k not in ["id", "isEdited"]}
             payload.setdefault("post_id", db_post.id)
             rcreate = reward_schema.RewardCreate(**payload)
 
-            await reward_service.create_reward_with_images(
+            await reward_service.create_reward_with_media(
                 db=db, reward_data=[rcreate], files=[rfiles[idx]]
             )
 
@@ -205,13 +205,13 @@ async def update_post(
     post_id: UUID,
     clerk_id: str,
     post_data: Optional[schema.PostUpdate] = None,
-    post_images: Optional[List[UploadFile]] = None,       
+    post_media: Optional[List[UploadFile]] = None,       
     campaigns_payload: Optional[List[dict]] = None,       
-    campaign_images: Optional[List[UploadFile]] = None,
+    campaign_media: Optional[List[UploadFile]] = None,
     rewards_payload: Optional[List[dict]] = None,
-    reward_images: Optional[List[UploadFile]] = None,
-    post_images_manifest: Optional[list[dict]] = None,
-    post_images_reorder: Optional[list[dict]] = None,
+    reward_media: Optional[List[UploadFile]] = None,
+    post_media_manifest: Optional[list[dict]] = None,
+    post_media_reorder: Optional[list[dict]] = None,
 ):
     db_post = await verify_post_owner(db, post_id, clerk_id)
 
@@ -221,48 +221,48 @@ async def update_post(
 
     # 2) Manage Images
     # A. Handle Existing Images (Reorder + Delete)
-    if post_images_reorder is not None:
+    if post_media_reorder is not None:
         # 1. Parse payload
-        id_to_order = {UUID(str(it["id"])): int(it["display_order"]) for it in post_images_reorder}
+        id_to_order = {UUID(str(it["id"])): int(it["display_order"]) for it in post_media_reorder}
         
-        # 2. Identify current images in DB
-        current_images = {img.id: img for img in db_post.images}
+        # 2. Identify current media in DB
+        current_media = {img.id: img for img in db_post.media}
         
-        # 3. Update Order for kept images
-        for img_id, order in id_to_order.items():
-            if img_id in current_images:
-                current_images[img_id].display_order = order
+        # 3. Update Order for kept media
+        for media_id, order in id_to_order.items():
+            if media_id in current_media:
+                current_media[media_id].display_order = order
         
-        # 4. Delete missing images (Existing in DB but NOT in reorder list) 
+        # 4. Delete missing media (Existing in DB but NOT in reorder list) 
         kept_ids = set(id_to_order.keys())
-        for img_id, img in current_images.items():
-            if img_id not in kept_ids:
+        for media_id, media in current_media.items():
+            if media_id not in kept_ids:
                 # Delete physical file
-                if img.path:
-                    ap = _abs(img.path)
+                if media.path:
+                    ap = _abs(media.path)
                     try:
                         if os.path.exists(ap):
                             os.remove(ap)
                     except Exception as e:
                         print(f"Error deleting file {ap}: {e}")
                 # Delete from DB
-                image_repo.delete_image(db, img)
+                media_repo.delete_media(db, media)
         
         db.commit()
 
-    # B. Add New Images
-    if post_images:
-        await image_service._save_files_and_create_images(
+    # B. Add New Media
+    if post_media:
+        await media_service._save_files_and_create_media(
             db,
             parent_type="post",
             parent_id=db_post.id,
-            files=post_images, # already a list or None
-            images_manifest=post_images_manifest or [],   
+            files=post_media, # already a list or None
+            media_manifest=post_media_manifest or [],   
         )
 
     # --- campaigns ---
     if campaigns_payload is not None:
-        imgs = campaign_images or []
+        imgs = campaign_media or []
         ptr = 0
 
         current = {str(c.id): c for c in db_post.campaigns}
@@ -289,7 +289,7 @@ async def update_post(
                     raise HTTPException(status_code=400, detail="Missing campaign image for edited item")
                 file = imgs[ptr]; ptr += 1
 
-            await campaign_service.update_campaign_with_images(
+            await campaign_service.update_campaign_with_media(
                 db=db, campaign_id=cid, campaign_data=upd_obj, files=([file] if file else None)
             )
 
@@ -302,14 +302,14 @@ async def update_post(
                 raise HTTPException(status_code=400, detail="New campaign requires an image")
             file = imgs[ptr]; ptr += 1
 
-            await campaign_service.create_campaign_with_images(
+            await campaign_service.create_campaign_with_media(
                 db=db, campaign_data=[campaign_schema.CampaignCreate(**payload)], files=[file]
             )
 
         
     # --- rewards ---
     if rewards_payload is not None:
-        imgs = reward_images or []
+        imgs = reward_media or []
         ptr = 0
 
         current = {str(c.id): c for c in db_post.rewards}
@@ -336,7 +336,7 @@ async def update_post(
                     raise HTTPException(status_code=400, detail="Missing reward image for edited item")
                 file = imgs[ptr]; ptr += 1
 
-            await reward_service.update_reward_with_images(
+            await reward_service.update_reward_with_media(
                 db=db, reward_id=rid, reward_data=upd_obj, files=([file] if file else None)
             )
 
@@ -349,7 +349,7 @@ async def update_post(
                 raise HTTPException(status_code=400, detail="New reward requires an image")
             file = imgs[ptr]; ptr += 1
 
-            await reward_service.create_reward_with_images(
+            await reward_service.create_reward_with_media(
                 db=db, reward_data=[reward_schema.RewardCreate(**payload)], files=[file]
             )
 

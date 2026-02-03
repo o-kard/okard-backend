@@ -29,11 +29,11 @@ class User(Base):
     
     posts = relationship("Post", back_populates="user")
 
-    image = relationship(
-        "Image",
-        secondary="imageHandler",
-        primaryjoin="and_(User.id==ImageHandler.reference_id, ImageHandler.type=='user')",
-        secondaryjoin="ImageHandler.image_id==Image.id",
+    media = relationship(
+        "Media",
+        secondary="media_handler",
+        primaryjoin="and_(User.id==MediaHandler.reference_id, MediaHandler.type=='user')",
+        secondaryjoin="MediaHandler.media_id==Media.id",
         uselist=False,
         viewonly=True,
     )

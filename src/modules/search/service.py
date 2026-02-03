@@ -30,8 +30,8 @@ class SearchService:
         # -----------------------
         # for u in users:
         #     thumbnail = None
-        #     if u.image:
-        #         thumbnail = SearchService.build_image_url(request, u.image.path)
+        #     if u.media:
+        #         thumbnail = SearchService.build_image_url(request, u.media.path)
         #     if u:
         #         user_name = (
         #             f"{u.first_name} {u.surname}"
@@ -51,8 +51,8 @@ class SearchService:
         for p in posts:
 
             thumbnail = None
-            if p.images and len(p.images) > 0:
-                thumbnail = SearchService.build_image_url(request, p.images[0].path)
+            if p.media and len(p.media) > 0:
+                thumbnail = SearchService.build_image_url(request, p.media[0].path)
 
             user = db.query(User).filter(User.id == p.user_id).first()
             creator_name = None

@@ -11,7 +11,7 @@ def get_top_pledged_posts(
     query = (
         db.query(Post)
         .options(
-            selectinload(Post.images),
+            selectinload(Post.media),
             selectinload(Post.user),
         )
     )

@@ -3,7 +3,7 @@ from src.modules.comment.model import Comment
 from src.modules.contributor.model import Contributor
 from src.modules.country.model import Country
 from src.modules.edit_request.model import EditRequest, EditRequestApprover, EditRequestVote
-from src.modules.image.model import Image, ImageHandler
+from src.modules.media.model import Media, MediaHandler
 from src.modules.model.model import Model
 from src.modules.notification.model import Notification
 from src.modules.payment.model import Payment

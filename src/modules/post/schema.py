@@ -5,7 +5,7 @@ from typing import Optional, List
 
 from src.modules.reward.schema import RewardOut
 from src.modules.common.enums import PostState, PostStatus, PostCategory
-from src.modules.image.schema import ImageOut
+from src.modules.media.schema import MediaOut
 from src.modules.campaign.schema import CampaignOut
 from src.modules.user.schema import UserPublicResponse
 
@@ -40,10 +40,21 @@ class PostOut(PostBase):
     id: UUID
     user_id: UUID
     created_at: datetime
-    images: List[ImageOut] = []
+    media: List[MediaOut] = []
     campaigns: List[CampaignOut] = []
     rewards: List[RewardOut] = []
     user: UserPublicResponse
+
+    @computed_field
+    @property
+    def images(self) -> List[MediaOut]:
+        return [m for m in self.media if not (m.media_type or "").startswith("video/")]
+
+    @computed_field
+    @property
+    def video(self) -> Optional[MediaOut]:
+        vids = [m for m in self.media if (m.media_type or "").startswith("video/")]
+        return vids[0] if vids else None
     
     class Config:
         from_attributes = True
@@ -60,7 +71,7 @@ class PostSummaryOut(BaseModel):
     current_amount: int
     supporter: int
 
-    images: List[ImageOut]
+    media: List[MediaOut]
     user: UserPublicResponse
     state: Optional[PostState]
     status: Optional[PostStatus]
@@ -71,6 +82,17 @@ class PostSummaryOut(BaseModel):
         if self.goal_amount:
             return int((self.current_amount / self.goal_amount) * 100)
         return 0
+
+    @computed_field
+    @property
+    def images(self) -> List[MediaOut]:
+        return [m for m in self.media if not (m.media_type or "").startswith("video/")]
+
+    @computed_field
+    @property
+    def video(self) -> Optional[MediaOut]:
+        vids = [m for m in self.media if (m.media_type or "").startswith("video/")]
+        return vids[0] if vids else None
 
     class Config:
         from_attributes = True

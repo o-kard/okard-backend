@@ -4,7 +4,7 @@ from uuid import UUID
 from datetime import date
 from typing import Optional
 from src.modules.country.schema import CountryOut
-from src.modules.image.schema import ImageOut
+from src.modules.media.schema import MediaOut
 from src.modules.creator.schema import CreatorResponse
 
 class UserBase(BaseModel):
@@ -30,7 +30,7 @@ class UserUpdate(UserBase):
 class UserResponse(UserBase):
     id: UUID
     contribution_number: int
-    image: ImageOut | None = None
+    media: MediaOut | None = None
     country: CountryOut | None = None
     role: str | None = None
     creator: CreatorResponse | None = None
@@ -52,7 +52,7 @@ class UserPublicResponse(BaseModel):
     user_description: str | None = None
     campaign_number: int | None = 0
     contribution_number: int | None = 0
-    image: ImageOut | None = None
+    media: MediaOut | None = None
     
     class Config:
         from_attributes = True

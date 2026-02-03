@@ -36,7 +36,7 @@ def lists_comments(db: Session, post_id: UUID, viewer_user_id: UUID | None):
             with_expression(model.Comment.is_liked, like_expr),  # ใส่ค่าบน parent
             selectinload(model.Comment.children)
                 .options(with_expression(model.Comment.is_liked, like_expr)),  # ใส่ค่าบน children
-            joinedload(model.Comment.author).joinedload(user_model.User.image),
+            joinedload(model.Comment.author).joinedload(user_model.User.media),
         )
         .filter(
             model.Comment.post_id == post_id,

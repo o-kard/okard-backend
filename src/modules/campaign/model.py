@@ -21,11 +21,11 @@ class Campaign(Base):
 
     post = relationship("Post", back_populates="campaigns")  
 
-    images = relationship(
-        "Image",
-        secondary="imageHandler",
-        primaryjoin="and_(Campaign.id==ImageHandler.reference_id, ImageHandler.type=='campaign')",
-        secondaryjoin="ImageHandler.image_id==Image.id",
-        order_by="Image.display_order",
+    media = relationship(
+        "Media",
+        secondary="media_handler",
+        primaryjoin="and_(Campaign.id==MediaHandler.reference_id, MediaHandler.type=='campaign')",
+        secondaryjoin="MediaHandler.media_id==Media.id",
+        order_by="Media.display_order",
         viewonly=True,
     )
