@@ -104,6 +104,13 @@ def increment_current_amount(db: Session, post_id: UUID, delta: int):
     )
     db.commit()
 
+def increment_supporter(db: Session, post_id: UUID):
+    db.query(model.Post).filter(model.Post.id == post_id).update(
+        {model.Post.supporter: model.Post.supporter + 1},
+        synchronize_session=False
+    )
+    db.commit()
+
 def update_post_prediction(db: Session, post_id: UUID, result: dict):
     db.query(Post).filter(Post.id == post_id).update({
         Post.success_label: result.get("success_cls", {}).get("label"),

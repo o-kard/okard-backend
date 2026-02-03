@@ -17,6 +17,7 @@ class ProgressUpdate(ProgressBase):
 class ProgressOut(ProgressBase):
     id: UUID
     created_at: datetime
+    updated_at: Optional[datetime] = None
     images: List[ImageOut] = []
     class Config:
         orm_mode = True

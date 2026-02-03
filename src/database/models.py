@@ -13,3 +13,4 @@ from src.modules.reward.model import Reward
 from src.modules.test.model import Test
 from src.modules.user.model import User
 from src.modules.progress.model import Progress
+from src.modules.post_view.model import UserPostView

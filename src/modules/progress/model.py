@@ -15,6 +15,11 @@ class Progress(Base):
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
     )
+    updated_at = Column(
+        DateTime(timezone=True),
+        nullable=True,
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
     progress_header = Column(String, nullable=False)
     progress_description = Column(String, nullable=True)
 

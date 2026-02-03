@@ -61,6 +61,7 @@ class ReferenceType(str, enum.Enum):
     user = "user"
     progress = "progress"
     reward = "reward"
+    report = "report"
 
 
 

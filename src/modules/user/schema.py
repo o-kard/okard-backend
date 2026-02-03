@@ -46,6 +46,11 @@ class UserExistsResponse(BaseModel):
 class UserPublicResponse(BaseModel):
     id: UUID
     username: str
+    first_name: str | None = None
+    surname: str | None = None
+    user_description: str | None = None
+    campaign_number: int | None = 0
+    contribution_number: int | None = 0
     image: ImageOut | None = None
     
     class Config:

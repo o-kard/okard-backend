@@ -40,12 +40,15 @@ def create_payment(db: Session, clerk_id: str, data: schema.PaymentCreate) -> mo
 
     db_payment = repo.create_payment(db, payload, user_id=user.id)
 
-    contributor_service.ensure_and_add_amount(
+    _, is_new_contributor = contributor_service.ensure_and_add_amount(
         db=db,
         user_id=user.id,
         post_id=payload.post_id,
         amount=payload.amount,
     )
+
+    if is_new_contributor:
+        post_repo.increment_supporter(db, payload.post_id)
 
     post_repo.increment_current_amount(
         db=db,

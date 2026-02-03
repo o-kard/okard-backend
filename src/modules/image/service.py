@@ -152,6 +152,8 @@ async def _save_files_and_create_images(
             ref_type = ReferenceType.campaign
         elif parent_type == "progress":
             ref_type = ReferenceType.progress
+        elif parent_type == "report":
+            ref_type = ReferenceType.report
         else:
             raise ValueError(f"Unknown parent_type: {parent_type}")
 
