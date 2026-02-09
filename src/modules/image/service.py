@@ -27,7 +27,7 @@ async def create_image_from_upload(
     ref_type = None
 
     if clerk_id:
-        user = get_user_by_clerk_id(db, clerk_id)
+        user = await get_user_by_clerk_id(db, clerk_id)
         if not user:
             raise HTTPException(404, "User not found")
         user_id = user.id
@@ -92,17 +92,17 @@ async def create_image_from_upload(
 
     return db_image
 
-def list_images(db: Session):
+async def list_images(db: Session):
     return repo.list_images(db)
 
-def get_image_or_404(db: Session, image_id: UUID):
+async def get_image_or_404(db: Session, image_id: UUID):
     image = repo.get_image(db, image_id)
     if not image:
         raise ValueError("Image not found")
     return image
 
-def delete_image(db: Session, image_id: UUID):
-    db_image = get_image_or_404(db, image_id)
+async def delete_image(db: Session, image_id: UUID):
+    db_image = await get_image_or_404(db, image_id)
     return repo.delete_image(db, db_image)
 
 async def _save_files_and_create_images(

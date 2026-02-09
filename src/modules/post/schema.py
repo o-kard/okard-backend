@@ -46,7 +46,7 @@ class PostOut(PostBase):
     user: UserPublicResponse
     
     class Config:
-        orm_mode = True
+        from_attributes = True
             
 class PostSummaryOut(BaseModel):
     id: UUID
@@ -73,4 +73,4 @@ class PostSummaryOut(BaseModel):
         return 0
 
     class Config:
-        orm_mode = True
+        from_attributes = True

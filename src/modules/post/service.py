@@ -13,7 +13,7 @@ from src.modules.reward import schema as reward_schema, service as reward_servic
 from src.modules.model import service as model_service, schema as model_schema, repo as model_repo
 from src.modules.country import service as country_service
 from pathlib import Path
-from src.modules.user.repo import get_user_by_clerk_id 
+from src.modules.user.service import get_user_by_clerk_id 
 import os
 import uuid
 
@@ -57,8 +57,8 @@ def _abs(rel: str) -> str:
 #         image_repo.create_image(db, image)
 
 
-def verify_post_owner(db: Session, post_id: UUID, clerk_id: str) -> model.Post:
-    user = get_user_by_clerk_id(db, clerk_id)
+async def verify_post_owner(db: Session, post_id: UUID, clerk_id: str) -> model.Post:
+    user = await get_user_by_clerk_id(db, clerk_id)
     post = repo.get_post(db, post_id)
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
@@ -133,7 +133,7 @@ async def create_post(
     rewards: Optional[List[dict]] = None,
     reward_images: Optional[List[UploadFile]] = None,
 ):
-    user = get_user_by_clerk_id(db, clerk_id)
+    user = await get_user_by_clerk_id(db, clerk_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -202,7 +202,7 @@ async def update_post(
     post_images_manifest: Optional[list[dict]] = None,
     post_images_reorder: Optional[list[dict]] = None,
 ):
-    db_post = verify_post_owner(db, post_id, clerk_id)
+    db_post = await verify_post_owner(db, post_id, clerk_id)
 
     # 1) update post fields
     if post_data:

@@ -20,4 +20,4 @@ class ProgressOut(ProgressBase):
     updated_at: Optional[datetime] = None
     images: List[ImageOut] = []
     class Config:
-        orm_mode = True
+        from_attributes = True

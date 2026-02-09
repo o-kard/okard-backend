@@ -23,4 +23,4 @@ class PredictionResult(BaseModel):
     stretch_label: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True

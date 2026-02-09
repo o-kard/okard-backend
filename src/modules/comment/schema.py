@@ -25,4 +25,4 @@ class CommentOut(CommentBase):
     children: Optional[List["CommentOut"]] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True

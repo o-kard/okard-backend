@@ -10,6 +10,7 @@ from src.modules.user import model as user_model
 from src.modules.campaign import model as campaign_model
 from src.modules.reward import model as reward_model
 from src.modules.contributor import model as contributor_model
+from src.modules.creator import model as creator_model
 from src.modules.payment import model as payment_model
 from src.modules.model import model as predict_model
 
@@ -20,6 +21,7 @@ from src.modules.test.controller import router as test_router
 from src.modules.post.controller import router as post_router
 from src.modules.image.controller import router as image_router
 from src.modules.user.controller import router as user_router
+from src.modules.creator.controller import router as creator_router
 from src.modules.country.controller import router as country_router
 from src.modules.payment.controller import router as payment_router
 from src.modules.comment.controller import router as comment_router
@@ -67,7 +69,8 @@ BASE_DIR = Path(__file__).resolve().parent
 # )
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -97,3 +100,4 @@ app.include_router(home_router, prefix="/api")
 app.include_router(progress_router, prefix="/api")
 app.include_router(edit_request_router, prefix="/api")
 app.include_router(report_router, prefix="/api")
+app.include_router(creator_router, prefix="/api")

@@ -7,7 +7,6 @@ from src.modules.country.schema import CountryOut
 from src.modules.image.schema import ImageOut
 
 class UserBase(BaseModel):
-    clerk_id: str 
     username: str
     email: Optional[EmailStr] = None
     first_name: Optional[str] = None
@@ -17,31 +16,31 @@ class UserBase(BaseModel):
     tel: Optional[str] = None
     country_id: Optional[UUID] = None
     birth_date: Optional[date] = None
-    user_description: Optional[str] = None
 
 class UserCreate(UserBase):
+    clerk_id: str
     pass
     
 class UserUpdate(UserBase):
     remove_image: bool | None = None
+    role: str | None = None
     pass
 
 class UserResponse(UserBase):
     id: UUID
-    campaign_number: int
     contribution_number: int
     image: ImageOut | None = None
     country: CountryOut | None = None
     role: str | None = None
     
     class Config:
-        orm_mode = True
+        from_attributes = True
         
 class UserExistsResponse(BaseModel):
     exists: bool
     
     class Config:
-        orm_mode = True
+        from_attributes = True
         
 class UserPublicResponse(BaseModel):
     id: UUID
@@ -54,4 +53,4 @@ class UserPublicResponse(BaseModel):
     image: ImageOut | None = None
     
     class Config:
-        orm_mode = True
+        from_attributes = True

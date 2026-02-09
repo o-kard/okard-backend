@@ -1,11 +1,15 @@
 # modules/user/repo.py
 from sqlalchemy.orm import Session
 from . import model, schema
+from uuid import UUID
 
 def get_user_by_clerk_id(db: Session, clerk_id: str):
     return db.query(model.User).filter(model.User.clerk_id == clerk_id).first()
 
-async def create_user(db: Session, user_data: schema.UserCreate):
+def get_user_by_id(db: Session, user_id: UUID):
+    return db.query(model.User).filter(model.User.id == user_id).first()
+
+def create_user(db: Session, user_data: schema.UserCreate):
     existing_user = get_user_by_clerk_id(db, user_data.clerk_id)
     if existing_user:
         raise ValueError("User with this Clerk ID already exists.")
@@ -16,7 +20,7 @@ async def create_user(db: Session, user_data: schema.UserCreate):
     return db_user
 
 def update_user(db: Session, user_id, user_data: schema.UserUpdate):
-    existing_user = get_user_by_clerk_id(db, user_data.clerk_id)
+    existing_user = get_user_by_id(db, user_id)
     if (not existing_user) or (existing_user.id != user_id):
         raise ValueError("User Invalid.")
     # ใช้ exclude_unset เพื่ออัปเดตเฉพาะฟิลด์ที่ส่งมา

@@ -63,8 +63,6 @@ class ReferenceType(str, enum.Enum):
     reward = "reward"
     report = "report"
 
-
-
 class EditRequestStatus(str, enum.Enum):
     pending = "pending"
     approved = "approved"
@@ -75,3 +73,29 @@ class EditRequestStatus(str, enum.Enum):
 class VoteDecision(str, enum.Enum):
     approve = "approve"
     reject = "reject"
+
+class VerificationStatus(str, enum.Enum):
+    pending = "pending"
+    verified = "verified"
+    rejected = "rejected"
+
+class UserRole(str, enum.Enum):
+    user = "user"
+    creator = "creator"
+    admin = "admin"
+
+class UserStatus(str, enum.Enum):
+    active = "active"
+    inactive = "inactive"
+    suspended = "suspended"
+    banned = "banned"
+
+class StorageProvider(str, enum.Enum):
+    local = "local"
+    s3 = "s3"
+    gcs = "gcs"
+
+class VerificationDocType(str, enum.Enum):
+    id_card = "id_card"
+    house_registration = "house_registration"
+    bank_statement = "bank_statement"

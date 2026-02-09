@@ -22,7 +22,7 @@ class EditRequestApproverOut(BaseModel):
     contribution_amount: float
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class EditRequestOut(EditRequestBase):
     id: UUID
@@ -35,7 +35,7 @@ class EditRequestOut(EditRequestBase):
     approvers: List[EditRequestApproverOut] = []
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class VoteBase(BaseModel):
     decision: VoteDecision
@@ -50,4 +50,4 @@ class VoteOut(VoteBase):
     voted_at: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True

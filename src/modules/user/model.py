@@ -1,8 +1,10 @@
-from sqlalchemy import Column, String, Date, Integer, ForeignKey, and_
+from sqlalchemy import Column, String, Date, Integer, ForeignKey, and_, Enum, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from uuid import uuid4
 from src.database.db import Base
+from src.modules.common.enums import UserRole, UserStatus
+from datetime import datetime, timezone
 
 class User(Base):
     __tablename__ = "user"
@@ -19,10 +21,11 @@ class User(Base):
     tel = Column(String)
     country_id = Column(UUID(as_uuid=True), ForeignKey("country.id"), nullable=True)
     birth_date = Column(Date)
-    user_description = Column(String)
-    campaign_number = Column(Integer, default=0)
     contribution_number = Column(Integer, default=0)
-    role = Column(String, default="user")
+    role = Column(Enum(UserRole), default=UserRole.user)
+    status = Column(Enum(UserStatus), default=UserStatus.active)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
     posts = relationship("Post", back_populates="user")
 

@@ -20,4 +20,4 @@ class CampaignOut(CampaignBase):
     created_at: datetime
     images: List[ImageOut] = []              
     class Config:
-        orm_mode = True
+        from_attributes = True

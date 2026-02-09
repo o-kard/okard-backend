@@ -23,8 +23,8 @@ def get_payment(db: Session, payment_id: UUID) -> model.Payment:
         raise ValueError("Payment not found")
     return db_payment
 
-def create_payment(db: Session, clerk_id: str, data: schema.PaymentCreate) -> model.Payment:
-    user = get_user_by_clerk_id(db, clerk_id)
+async def create_payment(db: Session, clerk_id: str, data: schema.PaymentCreate) -> model.Payment:
+    user = await get_user_by_clerk_id(db, clerk_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -71,7 +71,7 @@ def create_payment(db: Session, clerk_id: str, data: schema.PaymentCreate) -> mo
             ),
             type=NotificationType.goal,
         )
-        notification_service.create_notification(db, notif)
+        await notification_service.create_notification(db, notif)
 
     return db_payment
 
