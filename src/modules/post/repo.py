@@ -17,7 +17,8 @@ def list_posts(
     q: str | None = None,
     sort: str | None = None,
     state: str | None = "published",
-    status: str | None = "active"
+    status: str | None = "active",
+    user_id: UUID | None = None
 ):
     query = db.query(model.Post).options(
         joinedload(Post.user).load_only(user_model.User.username).joinedload(user_model.User.image),
@@ -25,6 +26,9 @@ def list_posts(
         joinedload(model.Post.campaigns).joinedload(camp_model.Campaign.images), 
         joinedload(model.Post.rewards).joinedload(reward_model.Reward.images),
     )
+
+    if user_id:
+        query = query.filter(model.Post.user_id == user_id)
 
     if status and status != "all":
         query = query.filter(model.Post.status == status)

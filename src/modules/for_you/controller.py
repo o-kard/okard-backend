@@ -5,7 +5,7 @@ from src.database.db import get_db
 from src.modules.auth import get_optional_current_user
 from src.modules.for_you.schema import ForYouResponse
 from src.modules.for_you.service import for_you
-from src.modules.user import service as user_service
+from src.modules.user.repo import get_user_by_clerk_id
 
 router = APIRouter(prefix="/post", tags=["Post"])
 
@@ -22,7 +22,7 @@ def for_you_endpoint(
     user_id = None
     if payload:
         clerk_id = payload["sub"]
-        user = user_service.get_user_by_clerk_id(db, clerk_id)
+        user = get_user_by_clerk_id(db, clerk_id)
         if user:
             user_id = user.id
 

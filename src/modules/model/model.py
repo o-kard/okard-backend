@@ -15,7 +15,6 @@ class Model(Base):
     success_label = Column(String, nullable=False)
     risk_label = Column(String, nullable=False)
     days_to_state_label = Column(String, nullable=False)
-    category_label = Column(String, nullable=False)
     goal_eval_label = Column(String, nullable=False)
     stretch_label = Column(String, nullable=False)
 

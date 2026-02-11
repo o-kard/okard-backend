@@ -1,0 +1,63 @@
+{
+    "model_params": {
+        "n_num_features": 413,
+        "cat_cardinalities": [
+            26,
+            4,
+            15
+        ],
+        "head_dims": {
+            "success_cls": 2,
+            "risk_level": 3,
+            "days_to_state_change": 4,
+            "goal_eval": 3,
+            "stretch_potential_cls": 3
+        },
+        "k": 8,
+        "d_block": 256,
+        "n_blocks": 4,
+        "dropout": 0.1,
+        "fuse": "mean"
+    },
+    "feature_names": {
+        "numeric": [
+            "launch_dow",
+            "deadline_dow",
+            "prep_days",
+            "days_diff_launched_at_deadline",
+            "days_diff_launched_at_deadline_log",
+            "too_short_or_long",
+            "name_len",
+            "blurb_len",
+            "has_video",
+            "has_photo",
+            "goal_log",
+            "goal_per_day_log",
+            "gpd_rank_in_cat_mon",
+            "goal_rank_in_cat_mon",
+            "gpd_vs_cat_country_med",
+            "goal_vs_cat_country_med",
+            "cat_30d_launch_density",
+            "cat_30d_density_z",
+            "cat_mon_n",
+            "cat_mon_goal_med",
+            "cat_mon_gpd_med"
+        ],
+        "categorical": [
+            "country_displayable_name",
+            "dur_bin",
+            "category_group"
+        ],
+        "cyclic": [
+            "deadline_mon_sin",
+            "deadline_mon_cos",
+            "deadline_dom_sin",
+            "deadline_dom_cos",
+            "launched_at_mon_sin",
+            "launched_at_mon_cos",
+            "launched_at_dom_sin",
+            "launched_at_dom_cos"
+        ]
+    },
+    "text_embedding_model": "all-MiniLM-L6-v2"
+}

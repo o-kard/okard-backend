@@ -9,6 +9,7 @@ class InputData(BaseModel):
     start_date: str   
     end_date: str     
     country_displayable_name: str
+    category_group: str
     has_video: int
     has_photo: int
     # current_amount: float
@@ -18,7 +19,6 @@ class PredictionResult(BaseModel):
     success_label: str
     risk_label: str
     days_to_state_label: str
-    category_label: str
     goal_eval_label: str
     stretch_label: str
 

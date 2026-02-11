@@ -26,15 +26,16 @@ from src.modules.for_you import schema as for_you_schema
 router = APIRouter(prefix="/post", tags=["Post"])
 
 @router.get("", response_model=list[schema.PostOut])
-def list_posts(
+async def list_posts(
     category: Optional[str] = Query(None),
     q: Optional[str] = Query(None),
     sort: Optional[str] = Query("newest"),
     state: Optional[str] = Query("published"),
     status: Optional[str] = Query("active"),
+    clerk_id: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
-    return service.list_posts(db, category, q, sort, state, status)
+    return await service.list_posts(db, category, q, sort, state, status, clerk_id)
 
 @router.get("/{post_id}", response_model=schema.PostOut)
 def get_post(post_id: UUID, clerk_id: str | None = Query(None), db: Session = Depends(get_db)):

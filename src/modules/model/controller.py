@@ -1,6 +1,6 @@
 from typing import Optional
 from uuid import UUID
-from clerk_backend_api import Session
+from sqlalchemy.orm import Session
 from fastapi import APIRouter, Depends
 from src.database.db import get_db
 import torch

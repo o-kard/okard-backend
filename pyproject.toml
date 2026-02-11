@@ -20,6 +20,9 @@ dependencies = [
     "tabm>=0.0.3",
     "torch>=2.8.0",
     "uvicorn>=0.35.0",
+    "python-jose[cryptography]>=3.3.0",
+    "requests>=2.31.0",
+    "python-multipart>=0.0.9",
 ]
 
 [dependency-groups]

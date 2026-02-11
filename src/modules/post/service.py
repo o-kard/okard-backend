@@ -66,15 +66,22 @@ async def verify_post_owner(db: Session, post_id: UUID, clerk_id: str) -> model.
         raise HTTPException(status_code=403, detail="Permission denied")
     return post
 
-def list_posts(
+async def list_posts(
     db: Session,
     category: str | None = None,
     q: str | None = None,
     sort: str | None = None,
     state: str | None = "published",
-    status: str | None = "active"
+    status: str | None = "active",
+    clerk_id: str | None = None
 ):
-    return repo.list_posts(db, category, q, sort, state, status)
+    user_id = None
+    if clerk_id:
+        user = await get_user_by_clerk_id(db, clerk_id)
+        if user:
+            user_id = user.id
+
+    return repo.list_posts(db, category, q, sort, state, status, user_id=user_id)
 
 def get_post(db: Session, post_id: UUID):
     post = repo.get_post(db, post_id)
@@ -147,7 +154,7 @@ async def create_post(
         "start_date": format_datetime(post_data.effective_start_from),
         "end_date": format_datetime(post_data.effective_end_date),
         "country_displayable_name": country_service.get_country(db, user.country_id).en_name,
-        "has_video": 0,
+        "has_video": 1,
         "has_photo": 1 if post_images else 0,
     }
 

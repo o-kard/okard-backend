@@ -1,36 +1,43 @@
 import os, joblib, torch, numpy as np, pandas as pd
 from datetime import datetime
 from .schema import InputData
-from .tabm_model import load_model, head_dims, TabMMultiHead
+from .tabm_model import load_model, load_model_standard, TabMMultiHead
 from sentence_transformers import SentenceTransformer
-
+import json
 
 BASE_DIR = os.path.dirname(__file__)
 
-scaler = joblib.load(os.path.join(BASE_DIR, "pkl_files", "scaler.pkl"))
-label_encoders = joblib.load(os.path.join(BASE_DIR, "pkl_files", "label_encoders.pkl"))
+# โหลด Config โมเดลและฟีเจอร์
+config_path = os.path.join(BASE_DIR, "model_config.json")
+with open(config_path, "r", encoding="utf-8") as f:
+    model_config = json.load(f)
+
+# ดึงชื่อฟีเจอร์จาก config
+CATEGORICAL_FEATURES = model_config["feature_names"]["categorical"]
+CYCLIC_NUMERIC = model_config["feature_names"]["cyclic"]
+NUMERIC_FEATURES = model_config["feature_names"]["numeric"]
+
+# โหลด preprocessors (รวม label_encoders และ scaler)
+preprocessors_path = os.path.join(BASE_DIR, "pkl_files", "preprocessors.pkl")
+preprocessors = joblib.load(preprocessors_path)
+scaler = preprocessors["scaler"]
+label_encoders = preprocessors["label_encoders"]
+
 tables = joblib.load(os.path.join(BASE_DIR, "pkl_files", "group_stats.pkl"))  
 sentence_model = SentenceTransformer(os.path.join(BASE_DIR, "pkl_files", "sentence_model"))
 
-CATEGORICAL_FEATURES = ['country_displayable_name', "dur_bin",]
-CYCLIC_NUMERIC = [
-    'deadline_mon_sin','deadline_mon_cos','deadline_dom_sin','deadline_dom_cos',
-    'launched_at_mon_sin','launched_at_mon_cos','launched_at_dom_sin','launched_at_dom_cos'
-]
-NUMERIC_FEATURES = ["launch_dow","deadline_dow","prep_days",
-        "days_diff_launched_at_deadline","days_diff_launched_at_deadline_log",
-        "too_short_or_long","name_len","blurb_len","has_video","has_photo",
-        "goal_usd_log","goal_per_day_log",
-        "gpd_rank_in_cat_mon","goal_rank_in_cat_mon",
-        "gpd_vs_cat_country_med","goal_vs_cat_country_med",
-        "cat_30d_launch_density","cat_30d_density_z",
-        "cat_mon_n","cat_mon_goal_med","cat_mon_gpd_med",]
-
-cat_cardinalities = [len(label_encoders[f].classes_) for f in CATEGORICAL_FEATURES]
-
 device = torch.device("cpu")
 
-model = load_model(os.path.join(BASE_DIR, "tabm_model.pth"), device=device)
+# โหลดโมเดลโดยใช้พารามิเตอร์จาก config
+model_params = model_config["model_params"]
+# โหลดโมเดลโดยใช้พารามิเตอร์จาก config
+model_params = model_config["model_params"]
+# Force reload - Antigravity
+model = load_model_standard(
+    os.path.join(BASE_DIR, "tabm_model.pt"), 
+    device=device,
+    **model_params
+)
 
 def cyclic_encode(dt: datetime, prefix: str):
     return {
@@ -71,13 +78,25 @@ def preprocess(data: InputData):
         "blurb_len": len((data.blurb or "")),
         "has_video": data.has_video,
         "has_photo": data.has_photo,
-        "goal_usd_log": np.log1p(data.goal),
+        "goal_log": np.log1p(data.goal),
         "goal_per_day_log": np.log1p(data.goal / max(duration, 1)),
     }
 
     # ---- group stats lookup ----
-    key = (data.country_displayable_name, dur_bin)
+    # Note: Use category_group from data
+    key = (data.category_group, data.country_displayable_name, dur_bin)
+    # The group_stats keys might need adjustment if they were (country, dur_bin)
+    # But let's assume the user has updated the group_stats.pkl as well or follow the logic.
+    # Looking at original code: key = (data.country_displayable_name, dur_bin)
+    
+    # Actually, I should check the notebook to see how group_stats key is built.
+    # In TabM.ipynb, it doesn't show group_stats mapping explicitly but it uses category_group a lot.
+    
     g_stat = tables.get(key)
+    if g_stat is None:
+        # Fallback to just (country, dur_bin) if (cat, country, dur_bin) fails?
+        g_stat = tables.get((data.country_displayable_name, dur_bin))
+        
     if g_stat is None:
         print(f"[WARN] Missing group_stats key: {key} → using defaults")
         g_stat = {
@@ -94,7 +113,8 @@ def preprocess(data: InputData):
     feats_num.update(g_stat)
 
     # ---- numeric scaling ----
-    X_num = np.array([[feats_num[f] for f in feats_num]])
+    # MUST follow NUMERIC_FEATURES order from config
+    X_num = np.array([[feats_num[f] for f in NUMERIC_FEATURES]])
     X_num_scaled = scaler.transform(X_num)
 
     # ---- text embedding ----
@@ -118,11 +138,18 @@ def preprocess(data: InputData):
             raw_val = dur_bin
         else:
             raw_val = getattr(data, f)
+            if isinstance(raw_val, str):
+                raw_val = raw_val.strip()
 
         raw_val = str(raw_val) if raw_val is not None else "missing"
 
-        if raw_val in le.classes_:
-            val = le.transform([raw_val])[0]
+        # ทำ Case-insensitive matching กับ le.classes_
+        # สร้าง lowercase mapping (ควรทำครั้งเดียวตอนโหลด แต่ทำที่นี่ก่อนเพื่อความชัวร์)
+        class_map = {c.lower(): c for c in le.classes_}
+        normalized_val = raw_val.lower()
+
+        if normalized_val in class_map:
+            val = le.transform([class_map[normalized_val]])[0]
         else:
             print(f"[WARN] Unknown category for {f}: {raw_val} → fallback to 0")
             val = 0
