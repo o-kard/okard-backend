@@ -10,7 +10,8 @@ from . import service, schema
 from src.modules.user import schema as userSchema
 from src.modules.user import service as userService
 from src.modules.image import service as imageService
-from src.modules.common.enums import UserRole
+from src.modules.creator_verification_doc import service as verificationDocService
+from src.modules.common.enums import UserRole, VerificationDocType
 
 router = APIRouter(prefix="/creator", tags=["Creator"])
 
@@ -20,6 +21,9 @@ async def create_creator(
     db: Session = Depends(get_db),
     payload: dict = Depends(get_current_user),
     image: Optional[UploadFile] = File(None),
+    id_card: Optional[UploadFile] = File(None),
+    house_registration: Optional[UploadFile] = File(None),
+    bank_statement: Optional[UploadFile] = File(None),
 ):
     """Create a new creator profile with user update"""
     print("data", data)
@@ -64,6 +68,31 @@ async def create_creator(
         
         # Step 3: Create creator profile
         creator_res = await service.create_creator(db, creator_obj, clerk_id)
+        
+        # Step 4: Handle verification document uploads
+        if id_card:
+            await verificationDocService.create_verification_doc_from_upload(
+                db=db,
+                creator_id=creator_res.id,
+                doc_type=VerificationDocType.id_card,
+                file=id_card
+            )
+        
+        if house_registration:
+            await verificationDocService.create_verification_doc_from_upload(
+                db=db,
+                creator_id=creator_res.id,
+                doc_type=VerificationDocType.house_registration,
+                file=house_registration
+            )
+        
+        if bank_statement:
+            await verificationDocService.create_verification_doc_from_upload(
+                db=db,
+                creator_id=creator_res.id,
+                doc_type=VerificationDocType.bank_statement,
+                file=bank_statement
+            )
         
         # Success: return minimal response
         return schema.CreatorCreateResponse(

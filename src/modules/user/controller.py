@@ -3,6 +3,7 @@ import json
 from typing import Optional
 from uuid import UUID
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
 
 from . import schema, service
@@ -10,6 +11,7 @@ from src.modules.auth import get_current_user
 from src.database.db import get_db
 from src.modules.image.schema import ImageOut
 from src.modules.image.service import create_image_from_upload, delete_image
+from src.modules.common.clerk_helper import update_clerk_user_password
 
 router = APIRouter(prefix="/user", tags=["user"])
 
@@ -17,6 +19,7 @@ router = APIRouter(prefix="/user", tags=["user"])
 async def create_user(
     data: str = Form(...), 
     image: Optional[UploadFile] = File(None),
+    password: Optional[str] = Form(None),
     db: Session = Depends(get_db),
     payload: dict = Depends(get_current_user),
 ):
@@ -28,6 +31,14 @@ async def create_user(
     clerk_id = payload["sub"]
     user_obj.clerk_id = clerk_id
     
+    # Update password if provided
+    if password:
+        try:
+            await run_in_threadpool(update_clerk_user_password, clerk_id, password)
+        except Exception as e:
+            print(f"Failed to set password: {e}")
+            raise HTTPException(status_code=500, detail="Failed to set password")
+
     user_response = await service.create_user_from_clerk(db, user_obj)
     if image:
         image_response = await create_image_from_upload(
@@ -64,8 +75,8 @@ async def update_user(
     return user_response
 
 @router.get("/list", response_model=list[schema.UserResponse])
-def list_users(db: Session = Depends(get_db)):
-    users = service.list_users(db)
+async def list_users(db: Session = Depends(get_db)):
+    users = await service.list_users(db)
     return users
 
 @router.get("/{clerk_id}", response_model=schema.UserResponse)
