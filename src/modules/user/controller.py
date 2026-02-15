@@ -79,9 +79,9 @@ async def list_users(db: Session = Depends(get_db)):
     users = await service.list_users(db)
     return users
 
-@router.get("/{clerk_id}", response_model=schema.UserResponse)
-async def get_user_by_clerk_id(clerk_id: str, db: Session = Depends(get_db)):
-    user = await service.get_user_by_clerk_id(db, clerk_id)
+@router.get("/{id}", response_model=schema.UserResponse)
+async def get_user_by_id(id: UUID, db: Session = Depends(get_db)):
+    user = await service.get_user_by_id(db, id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user

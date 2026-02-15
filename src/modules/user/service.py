@@ -3,6 +3,7 @@ from typing import Optional
 from fastapi import UploadFile
 from sqlalchemy.orm import Session
 from . import repo, schema
+from uuid import UUID
 
 async def create_user_from_clerk(
     db: Session, 
@@ -18,3 +19,6 @@ async def update_user_from_clerk(db: Session, user_id, user_data: schema.UserUpd
 
 async def list_users(db: Session):
     return repo.list_users(db)
+
+async def get_user_by_id(db: Session, user_id: UUID):
+    return repo.get_user_by_id(db, user_id)
