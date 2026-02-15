@@ -5,6 +5,7 @@ from datetime import date
 from typing import Optional
 from src.modules.country.schema import CountryOut
 from src.modules.image.schema import ImageOut
+from src.modules.creator.schema import CreatorResponse
 
 class UserBase(BaseModel):
     username: str
@@ -32,6 +33,7 @@ class UserResponse(UserBase):
     image: ImageOut | None = None
     country: CountryOut | None = None
     role: str | None = None
+    creator: CreatorResponse | None = None
     
     class Config:
         from_attributes = True

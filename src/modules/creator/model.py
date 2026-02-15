@@ -24,5 +24,5 @@ class Creator(Base):
 
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
-    user = relationship("User", foreign_keys=[user_id])
+    user = relationship("User", back_populates="creator", foreign_keys=[user_id])
     verifier = relationship("User", foreign_keys=[verified_by])

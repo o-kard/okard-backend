@@ -3,7 +3,6 @@ from typing import Optional, List, Any
 from datetime import datetime
 from uuid import UUID
 
-from src.modules.user.schema import UserPublicResponse
 from src.modules.common.enums import VerificationStatus
 
 class CreatorBase(BaseModel):
@@ -27,8 +26,6 @@ class CreatorOut(CreatorBase):
     rejection_reason: Optional[str] = None
     created_at: datetime
     
-    user: Optional[UserPublicResponse] = None
-
     class Config:
         from_attributes = True
 
@@ -38,5 +35,16 @@ class CreatorCreateResponse(BaseModel):
     creator_id: UUID
     user_id: UUID
 
+    class Config:
+        from_attributes = True
+
+class CreatorResponse(BaseModel):
+    id: UUID
+    verification_status: VerificationStatus
+    verified_at: Optional[datetime] = None
+    campaign_number: int
+    bio: Optional[str] = None
+    social_links: Optional[list[dict]] = None
+    
     class Config:
         from_attributes = True
