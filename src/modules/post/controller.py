@@ -37,6 +37,10 @@ async def list_posts(
 ):
     return await service.list_posts(db, category, q, sort, state, status, clerk_id)
 
+@router.get("/campaign-by-user/{user_id}", response_model=List[schema.PostOut])
+def fetch_posts_by_user_id(user_id: UUID, db: Session = Depends(get_db)):
+    return service.get_posts_by_user_id(db, user_id)
+    
 @router.get("/{post_id}", response_model=schema.PostOut)
 def get_post(post_id: UUID, clerk_id: str | None = Query(None), db: Session = Depends(get_db)):
     try:
@@ -44,14 +48,12 @@ def get_post(post_id: UUID, clerk_id: str | None = Query(None), db: Session = De
     except ValueError:
         raise HTTPException(status_code=404, detail="Not found")
 
-    # ✅ log view ถ้ามี user
     if clerk_id:
         user = get_user_by_clerk_id(db, clerk_id)
         if user:
             log_post_view(db, user.id, post_id)
 
     return post
-    
 
 @router.delete("/{post_id}", response_model=schema.PostOut)
 def delete(post_id: UUID,clerk_id: str = Query(...), db: Session = Depends(get_db)):
@@ -226,7 +228,8 @@ def update_post_status(
         return service.change_post_status(db, post_id, status)
     except ValueError:
         raise HTTPException(status_code=404, detail="Not found")
-    
+
+  
 # @router.post("/predict/{post_id}")
 # async def predict_post(post_id: UUID, db: Session = Depends(get_db)):
 #     post = repo.get_post_by_id(db, post_id)

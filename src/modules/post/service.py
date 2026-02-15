@@ -89,6 +89,9 @@ def get_post(db: Session, post_id: UUID):
         raise ValueError("Post not found")
     return post
 
+def get_posts_by_user_id(db: Session, user_id: UUID):
+    return repo.list_posts(db, user_id=user_id)
+
 def update_post(db: Session, post_id: UUID, post_data: schema.PostUpdate):
     db_post = get_post(db, post_id)
     return repo.update_post(db, db_post, post_data)
