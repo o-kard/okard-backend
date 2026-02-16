@@ -12,6 +12,7 @@ from src.database.db import get_db
 from src.modules.image.schema import ImageOut
 from src.modules.image.service import create_image_from_upload, delete_image
 from src.modules.common.clerk_helper import update_clerk_user_password
+from src.modules.creator.schema import CreatorUpdate
 
 router = APIRouter(prefix="/user", tags=["user"])
 
@@ -49,25 +50,35 @@ async def create_user(
         
     return user_response
 
-@router.put("/update/{user_id}", response_model=schema.UserResponse)
+@router.put("/update", response_model=schema.UserResponse)
 async def update_user(
-    user_id: UUID,
     data: str = Form(...), 
     image: Optional[UploadFile] = File(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    payload: dict = Depends(get_current_user),
 ):
     try:
-        user_obj = schema.UserUpdate(**json.loads(data))
+        parsed_data = json.loads(data)
+    except json.JSONDecodeError as e:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Invalid JSON format: {str(e)}. Please check your JSON syntax."
+        )
+
+    try:
+        user_obj = schema.UserUpdate(**parsed_data['user'])
+        creator_obj = CreatorUpdate(**parsed_data['creator'])
         remove_image = user_obj.remove_image
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid user data")
     
-    user_response = await service.update_user_from_clerk(db, user_id, user_obj)
+    clerk_id = payload["sub"]
+    user_response = await service.update_profile(db, clerk_id, user_obj, creator_obj)
     if image:
         await create_image_from_upload(
             db, 
             file=image,
-            clerk_id=user_response.clerk_id
+            clerk_id=clerk_id
         )
     elif remove_image and user_response.image:
         await delete_image(db, user_response.image.id)

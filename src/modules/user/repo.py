@@ -19,9 +19,9 @@ def create_user(db: Session, user_data: schema.UserCreate):
     db.refresh(db_user)
     return db_user
 
-def update_user(db: Session, user_id, user_data: schema.UserUpdate):
-    existing_user = get_user_by_id(db, user_id)
-    if (not existing_user) or (existing_user.id != user_id):
+def update_user(db: Session, clerk_id: str, user_data: schema.UserUpdate):
+    existing_user = get_user_by_clerk_id(db, clerk_id)
+    if (not existing_user) or (existing_user.clerk_id != clerk_id):
         raise ValueError("User Invalid.")
     # ใช้ exclude_unset เพื่ออัปเดตเฉพาะฟิลด์ที่ส่งมา
     data = user_data.model_dump(exclude_unset=True)
