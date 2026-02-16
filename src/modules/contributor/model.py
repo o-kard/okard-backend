@@ -21,6 +21,8 @@ class Contributor(Base):
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
+    post = relationship("Post", back_populates="contributors")
+
     __table_args__ = (
         UniqueConstraint("user_id", "post_id", name="uq_contributor_user_post"),
     )

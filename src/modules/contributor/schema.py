@@ -4,6 +4,8 @@ from datetime import datetime
 from typing import Optional
 
 
+from src.modules.post.schema import PostSummaryOut
+
 class ContributorBase(BaseModel):
     user_id: UUID
     post_id: UUID
@@ -21,4 +23,7 @@ class ContributorOut(ContributorBase):
 
     class Config:
         from_attributes = True
+
+class ContributorWithPostOut(ContributorOut):
+    post: PostSummaryOut
 

@@ -31,3 +31,6 @@ def delete_contributor(db: Session, contributor_id: UUID):
         db.delete(c)
         db.commit()
     return c
+
+def get_by_user_id(db: Session, user_id: UUID):
+    return db.query(model.Contributor).filter(model.Contributor.user_id == user_id).all()

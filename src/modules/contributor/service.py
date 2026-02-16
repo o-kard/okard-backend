@@ -17,3 +17,6 @@ def ensure_and_add_amount(db: Session, user_id: UUID, post_id: UUID, amount: int
 
 def delete_contributor(db: Session, contributor_id: UUID):
     return repo.delete_contributor(db, contributor_id)
+
+def get_contributions_by_user(db: Session, user_id: UUID):
+    return repo.get_by_user_id(db, user_id)

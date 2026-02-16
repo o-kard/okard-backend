@@ -33,6 +33,7 @@ from src.modules.report.controller import router as report_router
 
 from src.modules.notification.controller import router as notification_router
 from src.modules.dashboard.controller import router as dashboard_router
+from src.modules.contributor.controller import router as contributor_router
 
 from src.modules.search.controller import router as search_router
 from src.modules.for_you.controller import router as for_you_router
@@ -101,3 +102,4 @@ app.include_router(progress_router, prefix="/api")
 app.include_router(edit_request_router, prefix="/api")
 app.include_router(report_router, prefix="/api")
 app.include_router(creator_router, prefix="/api")
+app.include_router(contributor_router, prefix="/api")

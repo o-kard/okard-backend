@@ -43,6 +43,7 @@ class Post(Base):
     progress = relationship("Progress", back_populates="post", cascade="all, delete-orphan")
     
     embedding_data = relationship("PostEmbedding", uselist=False, back_populates="post", cascade="all, delete-orphan")
+    contributors = relationship("Contributor", back_populates="post", cascade="all, delete-orphan")
 
     images = relationship(
         "Image",
