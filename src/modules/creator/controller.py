@@ -54,7 +54,7 @@ async def create_creator(
 
         # Set user role to creator
         user_obj.role = UserRole.creator
-        user_res = await userService.update_user_from_clerk(db, user.id, user_obj)
+        user_res = await userService.update_profile(db, clerk_id, user_obj)
         
         # Step 2: Handle image upload/deletion
         if image:

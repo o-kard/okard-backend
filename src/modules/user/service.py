@@ -20,7 +20,7 @@ async def update_profile(
     db: Session, 
     clerk_id: str, 
     user_data: schema.UserUpdate, 
-    creator_data: CreatorUpdate | None
+    creator_data: CreatorUpdate | None = None
 ):
     # 1. Update User
     user = repo.update_user(db, clerk_id, user_data)
