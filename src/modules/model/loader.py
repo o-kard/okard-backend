@@ -34,7 +34,7 @@ model_params = model_config["model_params"]
 model_params = model_config["model_params"]
 # Force reload - Antigravity
 model = load_model_standard(
-    os.path.join(BASE_DIR, "tabm_model.pt"), 
+    os.path.join(BASE_DIR, "tabm_model.pth"), 
     device=device,
     **model_params
 )
@@ -52,6 +52,13 @@ def preprocess(data: InputData):
 
     start = datetime.fromisoformat(data.start_date)
     end = datetime.fromisoformat(data.end_date)
+    
+    if getattr(data, "created_at", None):
+        created = datetime.fromisoformat(data.created_at)
+    else:
+        created = datetime.now(start.tzinfo)
+        
+    prep_days = max(0, (start.date() - created.date()).days)
     duration = (end - start).days
 
     # ---- duration bin ----
@@ -70,7 +77,7 @@ def preprocess(data: InputData):
     feats_num = {
         "launch_dow": start.weekday(),
         "deadline_dow": end.weekday(),
-        "prep_days": 0,
+        "prep_days": prep_days,
         "days_diff_launched_at_deadline": duration,
         "days_diff_launched_at_deadline_log": np.log1p(duration),
         "too_short_or_long": too_short_or_long,
@@ -100,17 +107,26 @@ def preprocess(data: InputData):
     if g_stat is None:
         print(f"[WARN] Missing group_stats key: {key} → using defaults")
         g_stat = {
-            "gpd_rank_in_cat_mon": 0,
-            "goal_rank_in_cat_mon": 0,
+            "gpd_rank_in_cat_mon": 0.5,
+            "goal_rank_in_cat_mon": 0.5,
             "gpd_vs_cat_country_med": 1.0,
             "goal_vs_cat_country_med": 1.0,
             "cat_30d_launch_density": 0,
             "cat_30d_density_z": 0,
             "cat_mon_n": 0,
-            "cat_mon_goal_med": 0,
-            "cat_mon_gpd_med": 0,
+            "cat_mon_goal_med": 1000,
+            "cat_mon_gpd_med": 33,
         }
     feats_num.update(g_stat)
+    
+    # ---- dynamic feature correction ----
+    # group_stats stores average ratios, but we must compute the exact ratio for THIS campaign's goal vs the median
+    cat_goal_med = max(feats_num.get("cat_mon_goal_med", 1.0), 1.0)
+    cat_gpd_med = max(feats_num.get("cat_mon_gpd_med", 1.0), 1.0)
+    gpd = data.goal / max(duration, 1)
+    
+    feats_num["goal_vs_cat_country_med"] = data.goal / cat_goal_med
+    feats_num["gpd_vs_cat_country_med"] = gpd / cat_gpd_med
 
     # ---- numeric scaling ----
     # MUST follow NUMERIC_FEATURES order from config
@@ -159,13 +175,13 @@ def preprocess(data: InputData):
     x_num = torch.tensor(x_num, dtype=torch.float32)
     x_cat = torch.tensor([x_cat], dtype=torch.long)
     
-    print(label_encoders["country_displayable_name"].classes_[:50])  
-    print("=== BACKEND DEBUG ===")
-    print("Numeric feats (scaled):", X_num_scaled[0][:5])
-    print("Text embed (sbert):", X_embed[0][:5])
-    print("Cyclic feats:", X_cyclic[0].tolist())
-    print("x_num shape:", x_num.shape)
-    print("x_cat:", x_cat.tolist())
+    # print(label_encoders["country_displayable_name"].classes_[:50])  
+    # print("=== BACKEND DEBUG ===")
+    # print("Numeric feats (scaled):", X_num_scaled[0][:5])
+    # print("Text embed (sbert):", X_embed[0][:5])
+    # print("Cyclic feats:", X_cyclic[0].tolist())
+    # print("x_num shape:", x_num.shape)
+    # print("x_cat:", x_cat.tolist())
     
     return x_num, x_cat
 

@@ -157,6 +157,7 @@ async def create_post(
         "start_date": format_datetime(post_data.effective_start_from),
         "end_date": format_datetime(post_data.effective_end_date),
         "country_displayable_name": country_service.get_country(db, user.country_id).en_name,
+        "category_group": post_data.category.value if post_data.category else "other",
         "has_video": 1,
         "has_photo": 1 if post_images else 0,
     }
