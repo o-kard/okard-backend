@@ -16,3 +16,4 @@ from src.modules.progress.model import Progress
 from src.modules.post_view.model import UserPostView
 from src.modules.creator.model import Creator
 from src.modules.creator_verification_doc.model import CreatorVerificationDoc
+from src.modules.bookmark.model import Bookmark

@@ -39,7 +39,8 @@ class PostUpdate(BaseModel):
 class PostOut(PostBase):
     id: UUID
     user_id: UUID
-    created_at: datetime
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
     media: List[MediaOut] = []
     campaigns: List[CampaignOut] = []
     rewards: List[RewardOut] = []
@@ -75,6 +76,8 @@ class PostSummaryOut(BaseModel):
     user: UserPublicResponse
     state: Optional[PostState]
     status: Optional[PostStatus]
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
     
     @computed_field
     @property

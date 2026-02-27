@@ -40,3 +40,4 @@ class User(Base):
     country = relationship("Country", back_populates="users")
     comments = relationship("Comment", back_populates="author", cascade="all, delete-orphan")
     creator = relationship("Creator", back_populates="user", uselist=False, foreign_keys="Creator.user_id")
+    bookmarks = relationship("Bookmark", back_populates="user", cascade="all, delete-orphan")

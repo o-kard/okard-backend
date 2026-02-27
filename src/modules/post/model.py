@@ -24,6 +24,7 @@ class Post(Base):
     user_id = Column(UUID(as_uuid=True), ForeignKey("user.id"))
     
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     effective_start_from = Column(DateTime(timezone=True), nullable=True)
     effective_end_date = Column(DateTime(timezone=True), nullable=True)
     state = Column(Enum(PostState), default=PostState.draft)
@@ -44,6 +45,7 @@ class Post(Base):
     
     embedding_data = relationship("PostEmbedding", uselist=False, back_populates="post", cascade="all, delete-orphan")
     contributors = relationship("Contributor", back_populates="post", cascade="all, delete-orphan")
+    bookmarked_by = relationship("Bookmark", back_populates="post", cascade="all, delete-orphan")
 
     media = relationship(
         "Media",
