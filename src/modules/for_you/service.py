@@ -180,7 +180,7 @@ def for_you(db: Session, user_id, limit: int = 10):
         if len(final) >= limit * 2:
             break
 
-    final = inject_exploration(final, explore_rate=0.15)
+    final.sort(key=lambda x: x[1], reverse=True)
 
     dedup = []
     seen = set()
@@ -190,17 +190,15 @@ def for_you(db: Session, user_id, limit: int = 10):
         dedup.append((pid, score))
         seen.add(pid)
 
-    final = dedup
-
-    final.sort(key=lambda x: x[1], reverse=True)
-    top = final[:limit]
+    top_candidates = dedup[:limit]
+    mixed_results = inject_exploration(top_candidates, explore_rate=0.15)
 
     return [
         {
             "campaign": post_map[pid],
             "score": score,
         }
-        for pid, score in top
+        for pid, score in mixed_results
     ]
 
 
