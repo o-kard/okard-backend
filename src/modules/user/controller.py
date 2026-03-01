@@ -27,7 +27,7 @@ async def create_user(
     try:
         user_obj = schema.UserCreate(**json.loads(data))
     except Exception:
-        raise HTTPException(status_code=400, detail="Invalid user data")
+        raise HTTPException(status_code=400, detail=f"Invalid user data: {str(e)}")
 
     clerk_id = payload["sub"]
     user_obj.clerk_id = clerk_id
@@ -68,19 +68,19 @@ async def update_user(
     try:
         user_obj = schema.UserUpdate(**parsed_data['user'])
         creator_obj = CreatorUpdate(**parsed_data['creator'])
-        remove_media = user_obj.remove_media
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid user data")
+        remove_image = user_obj.remove_image
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid user data: {str(e)}")
     
     clerk_id = payload["sub"]
     user_response = await service.update_profile(db, clerk_id, user_obj, creator_obj)
-    if image:
+    if media:
         await create_media_from_upload(
             db, 
             file=media,
             clerk_id=clerk_id
         )
-    elif remove_media and user_response.media:
+    elif remove_image and user_response.media:
         delete_media(db, user_response.media.id)
         
     return user_response
