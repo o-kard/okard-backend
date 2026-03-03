@@ -405,3 +405,9 @@ async def update_prediction_for_post(db: Session, post_id: UUID):
     input_model = model_schema.InputData(**predict_input)
     await model_service.predict(db, input_model, db_post.id, save=True)
 
+async def get_post_community_stats(db: Session, post_id: UUID):
+    db_post = repo.get_post(db, post_id)
+    if not db_post:
+        raise ValueError("Post not found")
+    return repo.get_post_community_stats(db, post_id)
+

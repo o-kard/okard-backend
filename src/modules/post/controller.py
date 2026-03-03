@@ -233,6 +233,12 @@ def update_post_state(
     except ValueError:
         raise HTTPException(status_code=404, detail="Not found")
 
+@router.get("/{post_id}/community", response_model=schema.PostCommunityOut)
+async def get_post_community(post_id: UUID, db: Session = Depends(get_db)):
+    try:
+        return await service.get_post_community_stats(db, post_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Post not found")
   
 # @router.post("/predict/{post_id}")
 # async def predict_post(post_id: UUID, db: Session = Depends(get_db)):

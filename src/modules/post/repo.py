@@ -12,6 +12,9 @@ from sqlalchemy import or_, desc, asc, select, exists
 from datetime import datetime, timezone
 from src.modules.bookmark.model import Bookmark
 from src.modules.common.enums import PostState
+from src.modules.contributor.model import Contributor
+from src.modules.user.model import User
+from sqlalchemy import func
 
 
 def list_posts(
@@ -150,3 +153,40 @@ def update_post_prediction(db: Session, post_id: UUID, result: dict):
         Post.stretch_label: result.get("stretch_potential_cls", {}).get("label"),
     })
 
+
+def get_post_community_stats(db: Session, post_id: UUID):
+    # Get total supporters
+    total_supporters = db.query(func.count(func.distinct(Contributor.user_id))).filter(
+        Contributor.post_id == post_id
+    ).scalar() or 0
+
+    # Get contributors and their addresses
+    contributors = db.query(User.address).join(
+        Contributor, Contributor.user_id == User.id
+    ).filter(
+        Contributor.post_id == post_id
+    ).all()
+
+    # Simple logic to group by a generalized "city" from address
+    city_counts = {}
+    for (address,) in contributors:
+        if not address:
+            continue
+        # Mock logic: assume address contains province names, or simply use the whole address if short
+        # We can extract common Thai province names or just take the last part of a comma-separated address
+        parts = [p.strip() for p in address.split(",") if p.strip()]
+        city = parts[-1] if parts else "Unknown"
+        
+        # Fallback to some known cities if address is messy (for demo purposes)
+        city_counts[city] = city_counts.get(city, 0) + 1
+
+    # Format the result and get top cities
+    top_cities = [
+        {"city": city, "supporter": count}
+        for city, count in sorted(city_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+    ]
+
+    return {
+        "total_supporters": total_supporters,
+        "top_cities": top_cities
+    }

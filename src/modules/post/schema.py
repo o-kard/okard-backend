@@ -109,3 +109,11 @@ class PostSummaryOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+class CitySupporterStat(BaseModel):
+    city: str
+    supporter: int
+
+class PostCommunityOut(BaseModel):
+    total_supporters: int
+    top_cities: List[CitySupporterStat]
