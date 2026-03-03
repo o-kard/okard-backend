@@ -105,9 +105,9 @@ def get_trending_posts(db: Session, day: date, user_id: UUID,limit: int = 5):
         db.query(
             post_model.Post.id.label("post_id"),
             post_model.Post.post_header,
-            func.count(payment_model.id).label("donate_count")
+            func.count(payment_model.Payment.id).label("donate_count")
         )
-        .join(payment_model, payment_model.Payment.post_id == post_model.Post.id)
+        .join(payment_model.Payment, payment_model.Payment.post_id == post_model.Post.id)
         .filter(post_model.Post.user_id == user_id)
         .filter(cast(payment_model.Payment.created_at, Date) == day)
         .group_by(post_model.Post.id)

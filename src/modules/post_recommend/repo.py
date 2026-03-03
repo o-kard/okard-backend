@@ -14,7 +14,6 @@ def list_candidates(db: Session, source: Post):
         .filter(
             Post.id != source.id,
             PostEmbedding.embedding.isnot(None),
-            Post.status == source.status,   # หรือใช้ PostStatus.active ตรงๆก็ได้
             Post.state == PostState.published
         )
         .all()

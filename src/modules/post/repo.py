@@ -8,8 +8,11 @@ from src.modules.user import model as user_model
 
 from .model import Post
 
-from sqlalchemy import or_, desc, asc
+from sqlalchemy import or_, desc, asc, select, exists
 from datetime import datetime, timezone
+from src.modules.bookmark.model import Bookmark
+from src.modules.common.enums import PostState
+
 
 def list_posts(
     db: Session,
@@ -17,7 +20,6 @@ def list_posts(
     q: str | None = None,
     sort: str | None = None,
     state: str | None = "published",
-    status: str | None = "active",
     user_id: UUID | None = None
 ):
     query = db.query(model.Post).options(
@@ -25,16 +27,17 @@ def list_posts(
         joinedload(model.Post.media),
         joinedload(model.Post.campaigns).joinedload(camp_model.Campaign.media), 
         joinedload(model.Post.rewards).joinedload(reward_model.Reward.media),
+        joinedload(model.Post.models),
     )
 
     if user_id:
         query = query.filter(model.Post.user_id == user_id)
 
-    if status and status != "all":
-        query = query.filter(model.Post.status == status)
 
     if state and state != "all":
         query = query.filter(model.Post.state == state)
+    elif state == "all" and not user_id:
+        query = query.filter(model.Post.state != PostState.draft)
 
     if category:
         query = query.filter(model.Post.category == category)
@@ -56,24 +59,46 @@ def list_posts(
     elif sort == "popular":
         query = query.order_by(desc(model.Post.supporter))
     elif sort == "updated":
-         query = query.order_by(desc(model.Post.created_at))
+         query = query.order_by(desc(model.Post.updated_at))
     else:
         query = query.order_by(desc(model.Post.created_at))
 
-    return query.all()
+    posts = query.all()
+    
+    # Optional: Attach is_bookmarked if user_id is provided
+    if user_id and posts:
+        post_ids = [p.id for p in posts]
+        bookmarked_ids = db.execute(
+            select(Bookmark.post_id)
+            .where(Bookmark.user_id == user_id, Bookmark.post_id.in_(post_ids))
+        ).scalars().all()
+        bookmarked_set = set(bookmarked_ids)
+        for p in posts:
+            p.is_bookmarked = p.id in bookmarked_set
 
-def get_post(db: Session, post_id):
-    return (
+    return posts
+
+def get_post(db: Session, post_id, user_id: UUID | None = None):
+    post = (
         db.query(model.Post)
         .options( 
             joinedload(Post.user).load_only(user_model.User.username).joinedload(user_model.User.media),
             joinedload(model.Post.media),
             joinedload(model.Post.campaigns).joinedload(camp_model.Campaign.media),
             joinedload(model.Post.rewards).joinedload(reward_model.Reward.media),
+            joinedload(model.Post.models),
         )
         .filter(model.Post.id == post_id)
         .first()
     )
+    
+    if post and user_id:
+        is_bookmarked = db.execute(
+            select(exists().where(Bookmark.user_id == user_id, Bookmark.post_id == post_id))
+        ).scalar()
+        post.is_bookmarked = is_bookmarked
+        
+    return post
 
 def update_post(db: Session, db_post: model.Post, data: schema.PostUpdate):
     for key, value in data.model_dump(exclude_unset=True).items():
@@ -82,9 +107,9 @@ def update_post(db: Session, db_post: model.Post, data: schema.PostUpdate):
     db.refresh(db_post)
     return db_post
 
-# Repo to update post status
-def update_post_status(db: Session, db_post: model.Post, status: schema.PostStatus):
-    db_post.status = status
+# Repo to update post state
+def update_post_state(db: Session, db_post: model.Post, state: schema.PostState):
+    db_post.state = state
     db.commit()
     db.refresh(db_post)
     return db_post

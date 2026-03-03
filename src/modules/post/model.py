@@ -4,7 +4,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from src.database.db import Base
 from datetime import datetime, timezone
-from src.modules.common.enums import PostState, PostStatus, PostCategory
+from src.modules.common.enums import PostState, PostCategory
 
 
 
@@ -28,7 +28,6 @@ class Post(Base):
     effective_start_from = Column(DateTime(timezone=True), nullable=True)
     effective_end_date = Column(DateTime(timezone=True), nullable=True)
     state = Column(Enum(PostState), default=PostState.draft)
-    status = Column(Enum(PostStatus), default=PostStatus.active)
     category = Column(Enum(PostCategory), default=PostCategory.art)
     goal_amount = Column(BigInteger, default=0)
     current_amount = Column(BigInteger, default=0)
@@ -55,3 +54,16 @@ class Post(Base):
         order_by="Media.display_order",
         viewonly=True,
     )
+
+    @property
+    def ai_label(self):
+        if self.models:
+            latest = sorted(self.models, key=lambda m: getattr(m, 'created_at', None) or datetime.min.replace(tzinfo=timezone.utc), reverse=True)[0]
+            return {
+                "success_label": getattr(latest, "success_label", None),
+                "risk_label": getattr(latest, "risk_label", None),
+                "days_to_state_label": getattr(latest, "days_to_state_label", None),
+                "goal_eval_label": getattr(latest, "goal_eval_label", None),
+                "stretch_label": getattr(latest, "stretch_label", None)
+            }
+        return None

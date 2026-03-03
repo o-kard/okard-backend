@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from src.modules.user.service import get_user_by_clerk_id
 from . import repo
 from .schema import CreatorCreate, CreatorUpdate
+from src.modules.common.enums import VerificationStatus
 
 async def create_creator(db: Session, creator_data: CreatorCreate, clerk_id: str):
     """Create a new creator profile"""
@@ -47,3 +48,23 @@ async def update_creator(db: Session, creator_id: UUID, creator_data: CreatorUpd
         raise PermissionError("You don't have permission to update this creator profile")
     
     return repo.update_creator(db, creator_id, creator_data)
+
+def get_pending_creators(db: Session):
+    """Get all creators awaiting verification"""
+    return repo.get_pending_creators(db)
+
+async def verify_creator_request(db: Session, creator_id: UUID, status: str, admin_clerk_id: str, rejection_reason: str = None):
+    admin = await get_user_by_clerk_id(db, admin_clerk_id)
+    if not admin:
+        raise HTTPException(status_code=404, detail="Admin user not found")
+        
+    try:
+        enum_status = VerificationStatus(status)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid verification status")
+        
+    creator = repo.update_verification_status(db, creator_id, enum_status, admin.id, rejection_reason)
+    if not creator:
+        raise HTTPException(status_code=404, detail="Creator not found")
+        
+    return creator

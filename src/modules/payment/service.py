@@ -9,6 +9,8 @@ from . import repo, schema, model
 from src.modules.contributor import service as contributor_service
 from src.modules.reward import service as reward_service
 from src.modules.post import repo as post_repo
+from src.modules.common.enums import PostState
+from datetime import datetime, timezone
 
 from src.modules.notification import service as notification_service
 from src.modules.notification import schema as notification_schema
@@ -34,8 +36,13 @@ async def create_payment(db: Session, clerk_id: str, data: schema.PaymentCreate)
     if not post:
         raise HTTPException(status_code=404, detail="Post not found")
     
+    # Check if campaign is expired
+    if post.effective_end_date:
+        now_utc = datetime.now(timezone.utc)
+        if now_utc > post.effective_end_date:
+            raise HTTPException(status_code=400, detail="This campaign has ended and is no longer accepting payments.")
+
     prev_amount = post.current_amount 
-    print(prev_amount)
     goal_amount = post.goal_amount 
 
     db_payment = repo.create_payment(db, payload, user_id=user.id)
@@ -59,6 +66,10 @@ async def create_payment(db: Session, clerk_id: str, data: schema.PaymentCreate)
     reward_service.calculate_backup_amounts_for_post(db=db, post_id=payload.post_id)
 
     new_amount = prev_amount + payload.amount
+
+    # Auto-Success check
+    if goal_amount and new_amount >= goal_amount and post.state == PostState.published:
+        post_repo.update_post_state(db, post, PostState.success)
 
     if goal_amount and prev_amount < goal_amount <= new_amount:
         notif = notification_schema.NotificationCreate(
