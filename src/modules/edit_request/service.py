@@ -102,58 +102,7 @@ def create_request(db: Session, requester_id: UUID, data: schema.EditRequestCrea
         notification_service.create_notification(db, notif_payload)
         
     return edit_req
-
-    if approve_count > threshold:
-        req.status = EditRequestStatus.approved
-        req.resolved_at = datetime.now()
-        
-        if req.proposed_changes:
-            try:
-                changes = dict(req.proposed_changes)
-                rewards_payload = changes.pop("rewards_payload", None)
-                
-                if rewards_payload and isinstance(rewards_payload, list):
-                    from src.modules.reward import repo as reward_repo, schema as reward_schema
-                    for item in rewards_payload:
-                        data_dict = {k: v for k, v in item.items() if k not in ["isEdited", "id"]}
-                        
-                        if item.get("id"):
-                            # Update Existing
-                            rid = UUID(str(item["id"]))
-                            update_schema = reward_schema.RewardUpdate(**data_dict)
-                            curr_reward = reward_repo.get_reward(db, rid)
-                            if curr_reward:
-                                reward_repo.update_reward(db, curr_reward, update_schema)
-                        else:
-                            # Create New
-                            data_dict["post_id"] = req.post_id
-                            create_schema = reward_schema.RewardCreate(**data_dict)
-                            reward_repo.create_reward(db, create_schema)
-                
-                # 2. Update Post Columns
-                if changes:
-                    valid_keys = post_schema.PostUpdate.model_fields.keys()
-                    post_changes = {k: v for k, v in changes.items() if k in valid_keys}
-                    
-                    if post_changes:
-                        update_data = post_schema.PostUpdate(**post_changes)
-                        post = post_repo.get_post(db, req.post_id)
-                        post_repo.update_post(db, post, update_data)
-                    
-            except Exception as e:
-                import traceback
-                traceback.print_exc()
-                raise e
-            
-    elif reject_count >= (total_approvers - threshold):
-        req.status = EditRequestStatus.rejected
-        req.resolved_at = datetime.now()
     
-    db.commit()
-    db.refresh(req)
-    
-    return vote
-
 async def cast_vote(db: Session, edit_request_id: UUID, user_id: UUID, data: schema.VoteCreate):
     # Get Request with locking to prevent race conditions
     req = db.query(model.EditRequest).filter(model.EditRequest.id == edit_request_id).with_for_update().first()
