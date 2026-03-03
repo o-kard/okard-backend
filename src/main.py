@@ -55,9 +55,51 @@ class StaticCORSMiddleware(BaseHTTPMiddleware):
 
         return response
 
+import asyncio
+from datetime import datetime, timezone
+from contextlib import asynccontextmanager
+from src.database.db import SessionLocal
+from src.modules.common.enums import PostState
+
+async def expire_posts_task():
+    while True:
+        try:
+            db = SessionLocal()
+            now_utc = datetime.now(timezone.utc)
+            # Find published posts that have passed their end date
+            expired_posts = db.query(post_model.Post).filter(
+                post_model.Post.state == PostState.published,
+                post_model.Post.effective_end_date != None,
+                post_model.Post.effective_end_date < now_utc
+            ).all()
+
+            for post in expired_posts:
+                if post.goal_amount and post.current_amount >= post.goal_amount:
+                    post.state = PostState.success
+                else:
+                    post.state = PostState.fail
+
+            if expired_posts:
+                db.commit()
+            
+            db.close()
+        except Exception as e:
+            print(f"Error in expire_posts_task: {e}")
+        
+        # Run every 5 minutes
+        await asyncio.sleep(300)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: spawn the background task
+    task = asyncio.create_task(expire_posts_task())
+    yield
+    # Shutdown: cancel the task
+    task.cancel()
+
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 
 BASE_DIR = Path(__file__).resolve().parent
 # app.mount("/uploads", StaticFiles(directory=BASE_DIR / "uploads"), name="uploads")

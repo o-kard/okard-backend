@@ -83,8 +83,8 @@ def preprocess(data: InputData):
         "too_short_or_long": too_short_or_long,
         "name_len": len((data.name or "")),
         "blurb_len": len((data.blurb or "")),
-        "has_video": data.has_video,
-        "has_photo": data.has_photo,
+        "has_video": int(data.has_video),
+        "has_photo": int(data.has_photo),
         "goal_log": np.log1p(data.goal),
         "goal_per_day_log": np.log1p(data.goal / max(duration, 1)),
     }

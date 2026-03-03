@@ -4,16 +4,22 @@ from datetime import datetime
 from typing import Optional, List
 
 from src.modules.reward.schema import RewardOut
-from src.modules.common.enums import PostState, PostStatus, PostCategory
+from src.modules.common.enums import PostState, PostCategory
 from src.modules.media.schema import MediaOut
 from src.modules.campaign.schema import CampaignOut
 from src.modules.user.schema import UserPublicResponse
+
+class AIPredictionOut(BaseModel):
+    success_label: Optional[str] = None
+    risk_label: Optional[str] = None
+    days_to_state_label: Optional[str] = None
+    goal_eval_label: Optional[str] = None
+    stretch_label: Optional[str] = None
 
 class PostBase(BaseModel):
     effective_start_from: Optional[datetime]
     effective_end_date: Optional[datetime]
     state: Optional[PostState]
-    status: Optional[PostStatus]
     category: Optional[PostCategory]
     goal_amount: Optional[int] = 0
     current_amount: Optional[int] = 0
@@ -28,7 +34,6 @@ class PostUpdate(BaseModel):
     effective_start_from: Optional[datetime] = None
     effective_end_date: Optional[datetime] = None
     state: Optional[PostState] = None
-    status: Optional[PostStatus] = None
     category: Optional[PostCategory] = None
     goal_amount: Optional[int] = None
     current_amount: Optional[int] = None
@@ -45,6 +50,7 @@ class PostOut(PostBase):
     campaigns: List[CampaignOut] = []
     rewards: List[RewardOut] = []
     user: UserPublicResponse
+    is_bookmarked: bool = False
 
     @computed_field
     @property
@@ -56,6 +62,8 @@ class PostOut(PostBase):
     def video(self) -> Optional[MediaOut]:
         vids = [m for m in self.media if (m.media_type or "").startswith("video/")]
         return vids[0] if vids else None
+
+    ai_label: Optional[AIPredictionOut] = None
     
     class Config:
         from_attributes = True
@@ -75,9 +83,9 @@ class PostSummaryOut(BaseModel):
     media: List[MediaOut]
     user: UserPublicResponse
     state: Optional[PostState]
-    status: Optional[PostStatus]
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+    is_bookmarked: bool = False
     
     @computed_field
     @property
@@ -96,6 +104,8 @@ class PostSummaryOut(BaseModel):
     def video(self) -> Optional[MediaOut]:
         vids = [m for m in self.media if (m.media_type or "").startswith("video/")]
         return vids[0] if vids else None
+
+    ai_label: Optional[AIPredictionOut] = None
 
     class Config:
         from_attributes = True

@@ -1,4 +1,4 @@
-from http.client import HTTPException
+from fastapi import HTTPException, UploadFile
 import os
 from pathlib import Path
 from typing import List
@@ -29,7 +29,7 @@ async def create_media_from_upload(
     if clerk_id:
         user = await get_user_by_clerk_id(db, clerk_id)
         if not user:
-            raise HTTPException(404, "User not found")
+            raise HTTPException(status_code=404, detail="User not found")
         user_id = user.id
         print(f"User found: {user_id}")
         
@@ -55,9 +55,25 @@ async def create_media_from_upload(
         raise ValueError("Either post_id or user_id is required")
     
     content = await file.read()
+    
+    is_video = file.content_type and file.content_type.startswith("video/")
+    max_size = 50 * 1024 * 1024 if is_video else 5 * 1024 * 1024
+    limit_label = "50MB" if is_video else "5MB"
+
+    if len(content) > max_size:
+        raise HTTPException(status_code=400, detail=f"File {file.filename} exceeds {limit_label} limit")
+    
+    allowed_types = ["image/jpeg", "image/png", "image/gif", "image/webp", "video/mp4", "video/quicktime", "video/webm"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail=f"Unsupported file type for {file.filename}. Allowed: jpg, png, gif, webp, mp4, mov, webm")
+
     ext = os.path.splitext(file.filename)[1] or ".jpg"
     file_name = f"{uuid4().hex}{ext}"
-    file_path = UPLOAD_DIR / file_name
+    
+    # Create sub-directory based on reference type and ID
+    sub_dir = UPLOAD_DIR / ref_type.value / str(ref_id)
+    sub_dir.mkdir(parents=True, exist_ok=True)
+    file_path = sub_dir / file_name
 
     with open(file_path, "wb") as f:
         f.write(content)
@@ -68,7 +84,7 @@ async def create_media_from_upload(
         orig_name=file.filename,
         media_type=file.content_type,
         file_size=len(content),
-        path=f"/uploads/media/{file_name}",
+        path=f"/uploads/media/{ref_type.value}/{ref_id}/{file_name}",
         display_order=0 
     )
     repo.create_media(db, db_media)
@@ -116,9 +132,25 @@ async def _save_files_and_create_media(
 
     for i, file in enumerate(files, start=start_index):
         content = await file.read()
-        ext = os.path.splitext(file.filename)[1]
+        
+        is_video = file.content_type and file.content_type.startswith("video/")
+        max_size = 50 * 1024 * 1024 if is_video else 5 * 1024 * 1024
+        limit_label = "50MB" if is_video else "5MB"
+
+        if len(content) > max_size:
+            raise HTTPException(status_code=400, detail=f"File {file.filename} exceeds {limit_label} limit")
+        
+        allowed_types = ["image/jpeg", "image/png", "image/gif", "image/webp", "video/mp4", "video/quicktime", "video/webm"]
+        if file.content_type not in allowed_types:
+            raise HTTPException(status_code=400, detail=f"Unsupported file type for {file.filename}. Allowed: jpg, png, gif, webp, mp4, mov, webm")
+
+        ext = os.path.splitext(file.filename)[1] or ".jpg"
         file_name = f"{uuid4().hex}{ext}"
-        file_path = UPLOAD_DIR / file_name
+        
+        # Create sub-directory based on reference type and ID
+        sub_dir = UPLOAD_DIR / parent_type / str(parent_id)
+        sub_dir.mkdir(parents=True, exist_ok=True)
+        file_path = sub_dir / file_name
 
         with open(file_path, "wb") as f:
             f.write(content)
@@ -131,7 +163,7 @@ async def _save_files_and_create_media(
             orig_name=file.filename,
             media_type=file.content_type or "application/octet-stream",
             file_size=len(content),
-            path=f"/uploads/media/{file_name}",
+            path=f"/uploads/media/{parent_type}/{parent_id}/{file_name}",
             display_order=img_order,  
         )
 

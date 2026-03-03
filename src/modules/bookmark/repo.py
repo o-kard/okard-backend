@@ -17,6 +17,11 @@ def get_user_bookmarks(db: Session, user_id: UUID, skip: int = 0, limit: int = 2
     query = select(Bookmark).where(Bookmark.user_id == user_id).offset(skip).limit(limit)
     result = db.execute(query).scalars().all()
     return list(result)
+
+def get_user_bookmarked_post_ids(db: Session, user_id: UUID) -> set[UUID]:
+    query = select(Bookmark.post_id).where(Bookmark.user_id == user_id)
+    result = db.execute(query).scalars().all()
+    return set(result)
     
 def create_bookmark(db: Session, user_id: UUID, post_id: UUID) -> Bookmark:
     item = Bookmark(user_id=user_id, post_id=post_id)

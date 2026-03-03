@@ -31,11 +31,10 @@ async def list_posts(
     q: Optional[str] = Query(None),
     sort: Optional[str] = Query("newest"),
     state: Optional[str] = Query("published"),
-    status: Optional[str] = Query("active"),
     clerk_id: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
-    return await service.list_posts(db, category, q, sort, state, status, clerk_id)
+    return await service.list_posts(db, category, q, sort, state, clerk_id)
 
 @router.get("/campaign-by-user/{user_id}", response_model=List[schema.PostOut])
 def fetch_posts_by_user_id(user_id: UUID, db: Session = Depends(get_db)):
@@ -43,18 +42,20 @@ def fetch_posts_by_user_id(user_id: UUID, db: Session = Depends(get_db)):
     
 @router.get("/{post_id}", response_model=schema.PostOut)
 def get_post(post_id: UUID, clerk_id: str | None = Query(None), db: Session = Depends(get_db)):
-    try:
-        post = service.get_post(db, post_id)
-    except ValueError:
-        raise HTTPException(status_code=404, detail="Not found")
-
+    user_id = None
     if clerk_id:
         try:
             user = get_user_by_clerk_id(db, clerk_id)
             if user:
+                user_id = user.id
                 log_post_view(db, user.id, post_id)
         except Exception as e:
-            print(f"Error logging view: {e}")
+            print(f"Error logging view or fetching user: {e}")
+
+    try:
+        post = service.get_post(db, post_id, user_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Not found")
 
     return post
 
@@ -218,17 +219,17 @@ async def update(
 
     return post
     
-@router.put("/{post_id}/status", response_model=schema.PostOut)
-def update_post_status(
+@router.put("/{post_id}/state", response_model=schema.PostOut)
+def update_post_state(
     post_id: UUID,
-    status: schema.PostStatus = Query(...),
+    state: schema.PostState = Query(...),
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ): 
     try:
         clerk_id = current_user["sub"]
         service.verify_post_owner(db, post_id, clerk_id)
-        return service.change_post_status(db, post_id, status)
+        return service.change_post_state(db, post_id, state)
     except ValueError:
         raise HTTPException(status_code=404, detail="Not found")
 

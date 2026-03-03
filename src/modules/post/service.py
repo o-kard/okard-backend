@@ -13,7 +13,9 @@ from src.modules.reward import schema as reward_schema, service as reward_servic
 from src.modules.model import service as model_service, schema as model_schema, repo as model_repo
 from src.modules.country import service as country_service
 from pathlib import Path
-from src.modules.user.service import get_user_by_clerk_id 
+from src.modules.user.service import get_user_by_clerk_id
+from src.modules.common.enums import PostState
+from src.modules.user.repo import get_user_by_id
 import os
 import uuid
 
@@ -72,7 +74,6 @@ async def list_posts(
     q: str | None = None,
     sort: str | None = None,
     state: str | None = "published",
-    status: str | None = "active",
     clerk_id: str | None = None
 ):
     user_id = None
@@ -81,12 +82,17 @@ async def list_posts(
         if user:
             user_id = user.id
 
-    return repo.list_posts(db, category, q, sort, state, status, user_id=user_id)
+    return repo.list_posts(db, category, q, sort, state, user_id=user_id)
 
-def get_post(db: Session, post_id: UUID):
-    post = repo.get_post(db, post_id)
+def get_post(db: Session, post_id: UUID, user_id: UUID | None = None):
+    post = repo.get_post(db, post_id, user_id)
     if not post:
         raise ValueError("Post not found")
+        
+    if post.state == PostState.draft:
+        if not user_id or post.user_id != user_id:
+            raise ValueError("Permission denied. Cannot view draft post.")
+            
     return post
 
 def get_posts_by_user_id(db: Session, user_id: UUID):
@@ -96,11 +102,11 @@ def update_post(db: Session, post_id: UUID, post_data: schema.PostUpdate):
     db_post = get_post(db, post_id)
     return repo.update_post(db, db_post, post_data)
 
-# Service to change post status
-def change_post_status(db: Session, post_id: UUID, status: schema.PostStatus):
+# Service to change post state
+def change_post_state(db: Session, post_id: UUID, state: schema.PostState):
     db_post = get_post(db, post_id)
     # Add business logic for allowed transitions if needed
-    return repo.update_post_status(db, db_post, status)
+    return repo.update_post_state(db, db_post, state)
 
 def delete_post(db: Session, post_id: UUID):
     db_post = get_post(db, post_id)
@@ -158,8 +164,8 @@ async def create_post(
         "end_date": format_datetime(post_data.effective_end_date),
         "country_displayable_name": country_service.get_country(db, user.country_id).en_name,
         "category_group": post_data.category.value if post_data.category else "other",
-        "has_video": 0,
-        "has_photo": 1 if post_media else 0,
+        "has_video": any(m.get("type") == "video" for m in (post_media_manifest or [])),
+        "has_photo": any(m.get("type") == "image" for m in (post_media_manifest or [])),
     }
 
     input_model = model_schema.InputData(**predict_input)
@@ -217,6 +223,20 @@ async def update_post(
 
     # 1) update post fields
     if post_data:
+        # Prevent direct update of goal_amount (must use Edit Request)
+        if post_data.goal_amount is not None and post_data.goal_amount != db_post.goal_amount:
+            raise HTTPException(
+                status_code=400, 
+                detail="Goal amount cannot be updated directly. Please submit an Edit Request."
+            )
+        
+        # Prevent direct update of effective_end_date (must use Edit Request)
+        if post_data.effective_end_date is not None and post_data.effective_end_date != db_post.effective_end_date:
+            raise HTTPException(
+                status_code=400, 
+                detail="Campaign end date cannot be updated directly. Please submit an Edit Request."
+            )
+
         repo.update_post(db, db_post, post_data)
 
     # 2) Manage Images
@@ -353,5 +373,35 @@ async def update_post(
                 db=db, reward_data=[reward_schema.RewardCreate(**payload)], files=[file]
             )
 
+    await update_prediction_for_post(db, post_id)
+
     return repo.get_post(db, post_id)
+
+
+async def update_prediction_for_post(db: Session, post_id: UUID):
+    db_post = repo.get_post(db, post_id)
+    if not db_post:
+        return
+    
+    user = get_user_by_id(db, db_post.user_id)
+    if not user:
+        return
+    
+    has_video = any((m.media_type or "").startswith("video/") for m in db_post.media)
+    has_photo = any(not (m.media_type or "").startswith("video/") for m in db_post.media)
+
+    predict_input = {
+        "goal": db_post.goal_amount,
+        "name": db_post.post_header,
+        "blurb": db_post.post_description or "",
+        "start_date": format_datetime(db_post.effective_start_from),
+        "end_date": format_datetime(db_post.effective_end_date),
+        "country_displayable_name": country_service.get_country(db, user.country_id).en_name,
+        "category_group": db_post.category.value if db_post.category else "other",
+        "has_video": has_video,
+        "has_photo": has_photo,
+    }
+
+    input_model = model_schema.InputData(**predict_input)
+    await model_service.predict(db, input_model, db_post.id, save=True)
 

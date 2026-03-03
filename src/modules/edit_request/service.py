@@ -10,6 +10,8 @@ from src.modules.common.enums import NotificationType, EditRequestStatus, VoteDe
 from src.modules.post import service as post_service, schema as post_schema, repo as post_repo, model as post_model
 from src.modules.reward import repo as reward_repo, schema as reward_schema
 from src.modules.media import repo as media_repo
+from src.modules.post import service as post_service
+
 
 def _generate_display_changes(post: post_model.Post, proposed_changes: dict) -> str:
     lines = []
@@ -278,6 +280,9 @@ async def cast_vote(db: Session, edit_request_id: UUID, user_id: UUID, data: sch
                         update_data = post_schema.PostUpdate(**post_changes)
                         post = post_repo.get_post(db, req.post_id)
                         post_repo.update_post(db, post, update_data)
+                        
+                # 3. Update Prediction
+                await post_service.update_prediction_for_post(db, req.post_id)
                     
             except Exception as e:
                 import traceback

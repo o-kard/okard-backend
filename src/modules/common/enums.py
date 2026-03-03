@@ -16,12 +16,9 @@ class PaymentMethod(str, enum.Enum):
 class PostState(str, enum.Enum):
     draft = "draft"
     published = "published"
-    archived = "archived"
-
-class PostStatus(str, enum.Enum):
-    active = "active"
-    inactive = "inactive"
-    suspended = "suspended"
+    fail = "fail"
+    success = "success"
+    suspend = "suspend"
 
 class PostCategory(str, enum.Enum):
     art = "art"
