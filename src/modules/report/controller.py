@@ -27,7 +27,7 @@ async def create_report(
         description=description
     )
     
-    user = get_user_by_clerk_id(db, clerk_id)
+    user = await get_user_by_clerk_id(db, clerk_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
         
