@@ -72,6 +72,7 @@ async def create_payment(db: Session, clerk_id: str, data: schema.PaymentCreate)
         post_repo.update_post_state(db, post, PostState.success)
 
     if goal_amount and prev_amount < goal_amount <= new_amount:
+        # Notify Creator
         notif = notification_schema.NotificationCreate(
             user_id=post.user_id,             
             actor_id=user.id,                
@@ -83,6 +84,20 @@ async def create_payment(db: Session, clerk_id: str, data: schema.PaymentCreate)
             type=NotificationType.goal,
         )
         await notification_service.create_notification(db, notif)
+        
+        # Notify Supporters
+        contributors = contributor_service.repo.list_contributors_by_post(db, post.id)
+        supporter_ids = set([c.user_id for c in contributors if c.user_id != post.user_id])
+        for s_id in supporter_ids:
+            s_notif = notification_schema.NotificationCreate(
+                user_id=s_id,
+                actor_id=user.id,
+                post_id=post.id,
+                notification_title="🚀 Campaign Funded!",
+                notification_message=f"A campaign you supported '{post.post_header}' has reached its goal!",
+                type=NotificationType.goal,
+            )
+            await notification_service.create_notification(db, s_notif)
 
     return db_payment
 

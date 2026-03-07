@@ -241,6 +241,20 @@ async def cast_vote(db: Session, edit_request_id: UUID, user_id: UUID, data: sch
     elif reject_count >= (total_approvers - threshold):
         req.status = EditRequestStatus.rejected
         req.resolved_at = datetime.now()
+        
+    if req.status in [EditRequestStatus.approved, EditRequestStatus.rejected]:
+        db_post = post_repo.get_post(db, req.post_id)
+        if db_post:
+            status_text = "Approved" if req.status == EditRequestStatus.approved else "Rejected"
+            notif = notification_schema.NotificationCreate(
+                user_id=db_post.user_id,
+                actor_id=user_id,
+                post_id=req.post_id,
+                notification_title=f"Edit Request {status_text}",
+                notification_message=f"Your edit request for '{db_post.post_header}' has been {status_text.lower()} by supporters.",
+                type=NotificationType.system_alert
+            )
+            notification_service.create_notification(db, notif)
     
     db.commit()
     db.refresh(req)
