@@ -82,7 +82,7 @@ async def list_posts(
         if user:
             user_id = user.id
 
-    return repo.list_posts(db, category, q, sort, state, user_id=user_id)
+    return repo.list_posts(db, category, q, sort, state, current_user_id=user_id)
 
 def get_post(db: Session, post_id: UUID, user_id: UUID | None = None):
     post = repo.get_post(db, post_id, user_id)
@@ -96,7 +96,7 @@ def get_post(db: Session, post_id: UUID, user_id: UUID | None = None):
     return post
 
 def get_posts_by_user_id(db: Session, user_id: UUID):
-    return repo.list_posts(db, user_id=user_id)
+    return repo.list_posts(db, owner_id=user_id)
 
 def update_post(db: Session, post_id: UUID, post_data: schema.PostUpdate):
     db_post = get_post(db, post_id)

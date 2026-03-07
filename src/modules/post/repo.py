@@ -23,7 +23,8 @@ def list_posts(
     q: str | None = None,
     sort: str | None = None,
     state: str | None = "published",
-    user_id: UUID | None = None
+    owner_id: UUID | None = None,
+    current_user_id: UUID | None = None
 ):
     query = db.query(model.Post).options(
         joinedload(Post.user).load_only(user_model.User.username).joinedload(user_model.User.media),
@@ -33,13 +34,12 @@ def list_posts(
         joinedload(model.Post.models),
     )
 
-    if user_id:
-        query = query.filter(model.Post.user_id == user_id)
-
+    if owner_id:
+        query = query.filter(model.Post.user_id == owner_id)
 
     if state and state != "all":
         query = query.filter(model.Post.state == state)
-    elif state == "all" and not user_id:
+    elif state == "all" and not owner_id:
         query = query.filter(model.Post.state != PostState.draft)
 
     if category:
@@ -68,12 +68,12 @@ def list_posts(
 
     posts = query.all()
     
-    # Optional: Attach is_bookmarked if user_id is provided
-    if user_id and posts:
+    # Optional: Attach is_bookmarked if current_user_id is provided
+    if current_user_id and posts:
         post_ids = [p.id for p in posts]
         bookmarked_ids = db.execute(
             select(Bookmark.post_id)
-            .where(Bookmark.user_id == user_id, Bookmark.post_id.in_(post_ids))
+            .where(Bookmark.user_id == current_user_id, Bookmark.post_id.in_(post_ids))
         ).scalars().all()
         bookmarked_set = set(bookmarked_ids)
         for p in posts:
