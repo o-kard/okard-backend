@@ -52,7 +52,9 @@ class SearchService:
 
             thumbnail = None
             if p.media and len(p.media) > 0:
-                thumbnail = SearchService.build_image_url(request, p.media[0].path)
+                img_media = next((m for m in p.media if m.path and any(ext in m.path.lower() for ext in ['.jpg', '.jpeg', '.png', '.webp', '.gif'])), None)
+                selected_media = img_media if img_media else p.media[0]
+                thumbnail = SearchService.build_image_url(request, selected_media.path)
 
             user = db.query(User).filter(User.id == p.user_id).first()
             creator_name = None
