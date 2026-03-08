@@ -6,6 +6,12 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 WORKDIR /app
 
+# Install system dependencies required for building psycopg2 and other C extensions
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 # Copy dependency files first for better layer caching
 COPY pyproject.toml uv.lock ./
 
