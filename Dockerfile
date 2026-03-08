@@ -8,7 +8,7 @@ WORKDIR /app
 
 # Install system dependencies required for building psycopg2 and other C extensions
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
+    build-essential \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
