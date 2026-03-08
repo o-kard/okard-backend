@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[oc]
+.pytest_cache/
+.venv/
+
+# Environment
+.env*
+
+# Docker
+Dockerfile
+.dockerignore
+
+# Git
+.git/
+.gitignore
+
+# OS
+.DS_Store
+
+# Uploads (use a volume in production)
+uploads/
+src/uploads/
+
+# Tests
+tests/
+
+# IDE
+.vscode/
+.idea/
