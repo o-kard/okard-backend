@@ -8,7 +8,7 @@ from typing import Optional
 from src.modules.common.enums import StorageProvider, VerificationDocType
 from . import repo, schema
 
-BASE_DIR = Path(__file__).resolve().parents[3]
+BASE_DIR = Path(__file__).resolve().parents[2]
 UPLOAD_DIR = BASE_DIR / "uploads" / "verification_docs"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 

@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+
+resources:
+  - ../../base
+  - ingress.yaml
+
+namePrefix: uat-
+namespace: uat
+
+# Generate a secret from a local .env file (you must copy .env.local to .env in this folder)
+# This handles injecting all environment variables nicely.
+secretGenerator:
+  - name: okard-backend-secrets
+    envs:
+      - .env
+
+patches:
+  - path: deployment-patch.yaml

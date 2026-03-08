@@ -1,0 +1,14 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: okard-backend
+spec:
+  template:
+    spec:
+      containers:
+        - name: web
+          # For UAT, you might point to a specific tag like okard-backend:v1.0.0-uat
+          image: okard-backend:uat
+          envFrom:
+            - secretRef:
+                name: okard-backend-secrets

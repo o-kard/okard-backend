@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: okard-backend
+  labels:
+    app: okard-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: okard-backend
+  template:
+    metadata:
+      labels:
+        app: okard-backend
+    spec:
+      containers:
+        - name: web
+          image: okard-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          volumeMounts:
+            - name: uploads-volume
+              mountPath: /app/src/uploads
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+      volumes:
+        - name: uploads-volume
+          persistentVolumeClaim:
+            claimName: okard-uploads-pvc
