@@ -27,7 +27,9 @@ def list_posts(
     current_user_id: UUID | None = None
 ):
     query = db.query(model.Post).options(
-        joinedload(Post.user).load_only(user_model.User.username).joinedload(user_model.User.media),
+        joinedload(Post.user).joinedload(user_model.User.media),
+        joinedload(Post.user).joinedload(user_model.User.posts),
+        joinedload(Post.user).joinedload(user_model.User.creator),
         joinedload(model.Post.media),
         joinedload(model.Post.campaigns).joinedload(camp_model.Campaign.media), 
         joinedload(model.Post.rewards).joinedload(reward_model.Reward.media),
@@ -85,7 +87,9 @@ def get_post(db: Session, post_id, user_id: UUID | None = None):
     post = (
         db.query(model.Post)
         .options( 
-            joinedload(Post.user).load_only(user_model.User.username).joinedload(user_model.User.media),
+            joinedload(Post.user).joinedload(user_model.User.media),
+            joinedload(Post.user).joinedload(user_model.User.posts),
+            joinedload(Post.user).joinedload(user_model.User.creator),
             joinedload(model.Post.media),
             joinedload(model.Post.campaigns).joinedload(camp_model.Campaign.media),
             joinedload(model.Post.rewards).joinedload(reward_model.Reward.media),

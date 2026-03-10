@@ -41,3 +41,17 @@ class User(Base):
     comments = relationship("Comment", back_populates="author", cascade="all, delete-orphan")
     creator = relationship("Creator", back_populates="user", uselist=False, foreign_keys="Creator.user_id")
     bookmarks = relationship("Bookmark", back_populates="user", cascade="all, delete-orphan")
+
+    @property
+    def campaign_number(self):
+        return len(self.posts) if self.posts else 0
+
+    @property
+    def total_backers(self):
+        if not self.posts:
+            return 0
+        return sum(post.supporter for post in self.posts if post.supporter)
+
+    @property
+    def user_description(self):
+        return self.creator.bio if self.creator and hasattr(self.creator, "bio") else None
