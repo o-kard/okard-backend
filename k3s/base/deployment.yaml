@@ -15,14 +15,11 @@ spec:
         app: okard-backend
     spec:
       containers:
-        - name: web
+        - name: okard-backend
           image: okard-backend:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
-          volumeMounts:
-            - name: uploads-volume
-              mountPath: /app/src/uploads
           resources:
             requests:
               cpu: "100m"
@@ -30,7 +27,3 @@ spec:
             limits:
               cpu: "500m"
               memory: "2Gi"
-      volumes:
-        - name: uploads-volume
-          persistentVolumeClaim:
-            claimName: okard-uploads-pvc

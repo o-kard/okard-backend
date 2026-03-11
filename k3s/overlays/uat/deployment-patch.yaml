@@ -5,10 +5,20 @@ metadata:
 spec:
   template:
     spec:
+      imagePullSecrets:
+        - name: ghcr-secret
+      
+      initContainers:
+        - name: alembic-upgrade
+          image: ghcr.io/o-kard/okard-backend:latest
+          command: ["alembic", "upgrade", "head"]
+          envFrom:
+            - secretRef:
+                name: okard-backend-secrets
+
       containers:
-        - name: web
-          # For UAT, you might point to a specific tag like okard-backend:v1.0.0-uat
-          image: okard-backend:uat
+        - name: okard-backend
+          image: ghcr.io/o-kard/okard-backend:latest
           envFrom:
             - secretRef:
                 name: okard-backend-secrets
