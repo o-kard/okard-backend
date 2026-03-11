@@ -40,10 +40,6 @@ COPY --chown=appuser:appgroup alembic/ ./alembic/
 COPY --chown=appuser:appgroup alembic.ini ./
 COPY --chown=appuser:appgroup src/ ./src/
 
-# Create uploads directory (persistent volume should be mounted here)
-RUN mkdir -p src/uploads \
-    && chown -R appuser:appgroup src/uploads /app
-
 USER appuser
 
 # Use the venv's Python/scripts
