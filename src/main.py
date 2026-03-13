@@ -44,6 +44,7 @@ from src.modules.bookmark.controller import router as bookmark_router
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 from pathlib import Path
+import os
 
 class StaticCORSMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
@@ -102,18 +103,11 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(lifespan=lifespan)
 
 BASE_DIR = Path(__file__).resolve().parent
-# app.mount("/uploads", StaticFiles(directory=BASE_DIR / "uploads"), name="uploads")
 
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=["http://localhost:3000"], 
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
