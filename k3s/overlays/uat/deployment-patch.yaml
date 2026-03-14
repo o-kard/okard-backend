@@ -10,7 +10,7 @@ spec:
       
       initContainers:
         - name: alembic-upgrade
-          image: ghcr.io/o-kard/okard-backend:latest
+          image: ghcr.io/o-kard/okard-backend
           command: ["alembic", "upgrade", "head"]
           envFrom:
             - secretRef:
@@ -18,7 +18,7 @@ spec:
 
       containers:
         - name: okard-backend
-          image: ghcr.io/o-kard/okard-backend:latest
+          image: ghcr.io/o-kard/okard-backend
           envFrom:
             - secretRef:
                 name: okard-backend-secrets
