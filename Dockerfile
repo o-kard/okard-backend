@@ -35,7 +35,11 @@ WORKDIR /app
 # Copy the virtual environment from the builder stage
 COPY --from=builder /app/.venv /app/.venv
 
-# 2. ก๊อปปี้ไฟล์พร้อมกับมอบกรรมสิทธิ์ (--chown) ให้ appuser ทันที
+# 2. ก๊อปปี้ไฟล์ที่มีขนาดใหญ่ (โมเดล) แยกมาก่อน เพื่อให้โดน Cache ไว้ถ้าโมเดลไม่เปลี่ยน
+COPY --chown=appuser:appgroup src/modules/model/pkl_files/ ./src/modules/model/pkl_files/
+COPY --chown=appuser:appgroup src/modules/model/tabm_model.pth ./src/modules/model/tabm_model.pth
+
+# 3. ก๊อปปี้ไฟล์โค้ดของโปรเจกต์ ส่วนนี้จะถูก Build ใหม่เฉพาะตอนแก้โค้ด โดยไม่กระทบ Cache ของโมเดลข้างบน
 COPY --chown=appuser:appgroup alembic/ ./alembic/
 COPY --chown=appuser:appgroup alembic.ini ./
 COPY --chown=appuser:appgroup src/ ./src/
