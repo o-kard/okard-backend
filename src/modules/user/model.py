@@ -44,13 +44,13 @@ class User(Base):
 
     @property
     def campaign_number(self):
-        return len(self.posts) if self.posts else 0
+        return len(self.campaigns) if self.campaigns else 0
 
     @property
     def total_backers(self):
-        if not self.posts:
+        if not self.campaigns:
             return 0
-        return sum(post.supporter for post in self.posts if post.supporter)
+        return sum(campaign.supporter for campaign in self.campaigns if campaign.supporter)
 
     @property
     def user_description(self):

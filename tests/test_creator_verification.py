@@ -6,7 +6,6 @@ from src.modules.user.model import User
 from src.modules.creator.model import Creator
 from src.modules.creator_verification_doc import service, schema
 from src.modules.common.enums import VerificationDocType, StorageProvider
-from src.modules.post.model import Post
 from src.modules.campaign.model import Campaign
 from src.modules.reward.model import Reward
 from src.modules.comment.model import Comment
