@@ -1,10 +1,10 @@
 from pydantic import BaseModel
 from uuid import UUID
 from typing import List
-from src.modules.home.schema import PostSummaryOut
+from src.modules.home.schema import CampaignSummaryOut
 
 class ForYouCampaign(BaseModel):
-    campaign: PostSummaryOut
+    campaign: CampaignSummaryOut
     score: float
 
 class ForYouResponse(BaseModel):
