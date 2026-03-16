@@ -1,6 +1,6 @@
 # src/modules/home/repo.py
 from sqlalchemy.orm import Session, selectinload
-from src.modules.post.model import Post
+from src.modules.campaign.model import Campaign
 from sqlalchemy import func, case
 
 def get_top_pledged_posts(
@@ -9,36 +9,36 @@ def get_top_pledged_posts(
     category: str | None = None,
 ):
     query = (
-        db.query(Post)
+        db.query(Campaign)
         .options(
-            selectinload(Post.media),
-            selectinload(Post.user),
+            selectinload(Campaign.media),
+            selectinload(Campaign.user),
         )
     )
 
     if category:
-        query = query.filter(Post.category == category)
+        query = query.filter(Campaign.category == category)
 
     return (
         query
-        .order_by(Post.current_amount.desc())
+        .order_by(Campaign.current_amount.desc())
         .limit(limit)
         .all()
     )
     
 def get_category_stats(db: Session):
     funded_case = case(
-        (Post.current_amount >= Post.goal_amount, 1),
+        (Campaign.current_amount >= Campaign.goal_amount, 1),
         else_=0,
     )
 
     return (
         db.query(
-            Post.category.label("category"),
-            func.count(Post.id).label("total_projects"),
+            Campaign.category.label("category"),
+            func.count(Campaign.id).label("total_projects"),
             func.sum(funded_case).label("funded_projects"),
-            func.coalesce(func.sum(Post.current_amount), 0).label("total_raised"),
+            func.coalesce(func.sum(Campaign.current_amount), 0).label("total_raised"),
         )
-        .group_by(Post.category)
+        .group_by(Campaign.category)
         .all()
     )

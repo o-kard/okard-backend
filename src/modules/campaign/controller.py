@@ -101,10 +101,6 @@ async def create(
     if information_media is not None:
         info_media_list = information_media if isinstance(information_media, list) else [information_media]
 
-    if info_list_raw is not None:
-        if not info_media_list or len(info_media_list) != len(info_list_raw):
-            raise HTTPException(status_code=400, detail="information_media must match informations count (1:1).")
-
     reward_list_raw = None
     if rewards:
         parsed = json.loads(rewards)
@@ -117,9 +113,15 @@ async def create(
     if reward_media is not None:
         reward_media_list = reward_media if isinstance(reward_media, list) else [reward_media]
 
-    if reward_list_raw is not None:
-        if not reward_media_list or len(reward_media_list) != len(reward_list_raw):
-            raise HTTPException(status_code=400, detail="reward_media must match rewards count (1:1).")
+    if not info_list_raw or len(info_list_raw) == 0:
+        raise HTTPException(status_code=400, detail="At least one information entry is required.")
+    if not info_media_list or len(info_media_list) != len(info_list_raw):
+        raise HTTPException(status_code=400, detail="information_media must match informations count (1:1).")
+
+    if not reward_list_raw or len(reward_list_raw) == 0:
+        raise HTTPException(status_code=400, detail="At least one reward entry is required.")
+    if not reward_media_list or len(reward_media_list) != len(reward_list_raw):
+        raise HTTPException(status_code=400, detail="reward_media must match rewards count (1:1).")
         
     campaign_media_list = media if isinstance(media, list) else ([media] if media else [])
     manifest = json.loads(media_manifest) if media_manifest else []
