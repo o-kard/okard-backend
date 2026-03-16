@@ -37,5 +37,5 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          cache-from: type=registry,ref=ghcr.io/o-kard/okard-backend:buildcache
-          cache-to: type=registry,ref=ghcr.io/o-kard/okard-backend:buildcache,mode=max
+          cache-from: type=${{ env.CACHE_TYPE }},ref=${{ env.CACHE_REF }}
+          cache-to: type=${{ env.CACHE_TYPE }},ref=${{ env.CACHE_REF }},mode=max
