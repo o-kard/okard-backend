@@ -136,8 +136,8 @@ async def create_campaign(
 
     predict_input = {
         "goal": campaign_data.goal_amount,
-        "name": campaign_data.post_header,
-        "blurb": campaign_data.post_description or "",
+        "name": campaign_data.campaign_header,
+        "blurb": campaign_data.campaign_description or "",
         "start_date": format_datetime(campaign_data.effective_start_from),
         "end_date": format_datetime(campaign_data.effective_end_date),
         "country_displayable_name": country_service.get_country(db, user.country_id).en_name,
@@ -370,8 +370,8 @@ async def update_prediction_for_campaign(db: Session, campaign_id: UUID):
 
     predict_input = {
         "goal": db_campaign.goal_amount,
-        "name": db_campaign.post_header,
-        "blurb": db_campaign.post_description or "",
+        "name": db_campaign.campaign_header,
+        "blurb": db_campaign.campaign_description or "",
         "start_date": format_datetime(db_campaign.effective_start_from),
         "end_date": format_datetime(db_campaign.effective_end_date),
         "country_displayable_name": country_service.get_country(db, user.country_id).en_name,

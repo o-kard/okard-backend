@@ -31,8 +31,8 @@ class Campaign(Base):
     category = Column(Enum(CampaignCategory), default=CampaignCategory.art)
     goal_amount = Column(BigInteger, default=0)
     current_amount = Column(BigInteger, default=0)
-    post_header = Column(String, nullable=False)
-    post_description = Column(String, nullable=True)
+    campaign_header = Column(String, nullable=False)
+    campaign_description = Column(String, nullable=True)
     supporter = Column(Integer, default=0)
     
     user = relationship("User", back_populates="campaigns")

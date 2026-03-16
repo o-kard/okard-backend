@@ -51,8 +51,8 @@ def list_campaigns(
         search = f"%{q}%"
         query = query.filter(
             or_(
-                model.Campaign.post_header.ilike(search),
-                model.Campaign.post_description.ilike(search)
+                model.Campaign.campaign_header.ilike(search),
+                model.Campaign.campaign_description.ilike(search)
             )
         )
 

@@ -13,7 +13,7 @@ from src.modules.reward.model import Reward
 from src.modules.test.model import Test
 from src.modules.user.model import User
 from src.modules.progress.model import Progress
-from src.modules.campaign_view.model import UserCampaignView
 from src.modules.creator.model import Creator
 from src.modules.creator_verification_doc.model import CreatorVerificationDoc
 from src.modules.bookmark.model import Bookmark
+from src.modules.campaign_view.model import UserCampaignView
