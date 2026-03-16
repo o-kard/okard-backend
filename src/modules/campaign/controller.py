@@ -5,28 +5,28 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 from src.database.db import get_db
 from . import schema, service
-from src.modules.campaign import schema as camp_schema, service as camp_service
+from src.modules.information import schema as info_schema, service as info_service
 from fastapi import Form 
-from src.modules.post import repo
+from . import repo
 from src.modules.model import controller as predict_controller
 from src.modules.model.schema import InputData
 from src.modules.auth import get_current_user
 
 from fastapi import BackgroundTasks
-from src.modules.post.background import generate_post_embedding
-from src.modules.post_view.service import log_post_view
+from src.modules.campaign.background import generate_campaign_embedding
+from src.modules.campaign_view.service import log_campaign_view
 from src.modules.user.repo import get_user_by_clerk_id
 
-from src.modules.post_recommend import service as recommend_service
-from src.modules.post_recommend import schema as recommend_schema
+from src.modules.campaign_recommend import service as recommend_service
+from src.modules.campaign_recommend import schema as recommend_schema
 
 from src.modules.for_you import service as for_you_service
 from src.modules.for_you import schema as for_you_schema
 
-router = APIRouter(prefix="/post", tags=["Post"])
+router = APIRouter(prefix="/campaign", tags=["Campaign"])
 
-@router.get("", response_model=list[schema.PostOut])
-async def list_posts(
+@router.get("", response_model=list[schema.CampaignOut])
+async def list_campaigns(
     category: Optional[str] = Query(None),
     q: Optional[str] = Query(None),
     sort: Optional[str] = Query("newest"),
@@ -34,79 +34,76 @@ async def list_posts(
     clerk_id: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
-    return await service.list_posts(db, category, q, sort, state, clerk_id)
+    return await service.list_campaigns(db, category, q, sort, state, clerk_id)
 
-@router.get("/campaign-by-user/{user_id}", response_model=List[schema.PostOut])
-def fetch_posts_by_user_id(user_id: UUID, db: Session = Depends(get_db)):
-    return service.get_posts_by_user_id(db, user_id)
+@router.get("/campaign-by-user/{user_id}", response_model=List[schema.CampaignOut])
+def fetch_campaigns_by_user_id(user_id: UUID, db: Session = Depends(get_db)):
+    return service.get_campaigns_by_user_id(db, user_id)
     
-@router.get("/{post_id}", response_model=schema.PostOut)
-def get_post(post_id: UUID, clerk_id: str | None = Query(None), db: Session = Depends(get_db)):
+@router.get("/{campaign_id}", response_model=schema.CampaignOut)
+def get_campaign(campaign_id: UUID, clerk_id: str | None = Query(None), db: Session = Depends(get_db)):
     user_id = None
     if clerk_id:
         try:
             user = get_user_by_clerk_id(db, clerk_id)
             if user:
                 user_id = user.id
-                log_post_view(db, user.id, post_id)
+                log_campaign_view(db, user.id, campaign_id)
         except Exception as e:
             print(f"Error logging view or fetching user: {e}")
 
     try:
-        post = service.get_post(db, post_id, user_id)
+        campaign = service.get_campaign(db, campaign_id, user_id)
     except ValueError:
         raise HTTPException(status_code=404, detail="Not found")
 
-    return post
+    return campaign
 
-@router.delete("/{post_id}", response_model=schema.PostOut)
-def delete(post_id: UUID,clerk_id: str = Query(...), db: Session = Depends(get_db)):
+@router.delete("/{campaign_id}", response_model=schema.CampaignOut)
+def delete(campaign_id: UUID,clerk_id: str = Query(...), db: Session = Depends(get_db)):
     try:
-        service.verify_post_owner(db, post_id, clerk_id)
-        return service.delete_post(db, post_id)
+        service.verify_campaign_owner(db, campaign_id, clerk_id)
+        return service.delete_campaign(db, campaign_id)
     except ValueError:
         raise HTTPException(status_code=404, detail="Not found")
 
-@router.post("/with-campaigns", response_model=schema.PostOut)
+@router.post("/with-informations", response_model=schema.CampaignOut)
 async def create(
-    post_data: str = Form(...),
+    campaign_data: str = Form(...),
     media: Union[List[UploadFile], UploadFile, None] = File(None),
     media_manifest: Union[str, None] = Form(None),
-    campaigns: Union[str, None] = Form(None),                                  
-    campaign_media: Union[List[UploadFile], UploadFile, None] = File(None),
+    informations: Union[str, None] = Form(None),                                  
+    information_media: Union[List[UploadFile], UploadFile, None] = File(None),
     rewards: Union[str, None] = Form(None),                     
     reward_media: Union[List[UploadFile], UploadFile, None] = File(None),     
     clerk_id: str = Query(...),
     db: Session = Depends(get_db),
     background_tasks: BackgroundTasks = None,
 ):
-    # print("post_media:", len(media or []))
-    # print("create_campaigns:", len(campaigns or []), "camp_files:", len(campaign_media or []))
-    
     try:
-        post_obj = schema.PostCreate(**json.loads(post_data))
+        campaign_obj = schema.CampaignCreate(**json.loads(campaign_data))
     except Exception:
-        raise HTTPException(status_code=400, detail="Invalid post_data")
+        raise HTTPException(status_code=400, detail="Invalid campaign_data")
 
-    post_media_list: Optional[List[UploadFile]] = None
+    campaign_media_list: Optional[List[UploadFile]] = None
     if media is not None:
-        post_media_list = media if isinstance(media, list) else [media]
+        campaign_media_list = media if isinstance(media, list) else [media]
 
-    camp_list_raw = None
-    if campaigns:
-        parsed = json.loads(campaigns)
-        if not isinstance(parsed, list): raise HTTPException(status_code=400, detail="Invalid campaigns payload")
+    info_list_raw = None
+    if informations:
+        parsed = json.loads(informations)
+        if not isinstance(parsed, list): raise HTTPException(status_code=400, detail="Invalid informations payload")
         for it in parsed:
-            if not isinstance(it, dict) or "display_order" not in it: raise HTTPException(status_code=400, detail="Invalid campaigns payload")
-        camp_list_raw = parsed
+            if not isinstance(it, dict) or "display_order" not in it: raise HTTPException(status_code=400, detail="Invalid informations payload")
+        info_list_raw = parsed
 
-    camp_media_list: Optional[List[UploadFile]] = None
-    if campaign_media is not None:
-        camp_media_list = campaign_media if isinstance(campaign_media, list) else [campaign_media]
+    info_media_list: Optional[List[UploadFile]] = None
+    if information_media is not None:
+        info_media_list = information_media if isinstance(information_media, list) else [information_media]
 
-    if camp_list_raw is not None:
-        if not camp_media_list or len(camp_media_list) != len(camp_list_raw):
-            raise HTTPException(status_code=400, detail="campaign_media must match campaigns count (1:1).")
+    if info_list_raw is not None:
+        if not info_media_list or len(info_media_list) != len(info_list_raw):
+            raise HTTPException(status_code=400, detail="information_media must match informations count (1:1).")
 
     reward_list_raw = None
     if rewards:
@@ -124,31 +121,30 @@ async def create(
         if not reward_media_list or len(reward_media_list) != len(reward_list_raw):
             raise HTTPException(status_code=400, detail="reward_media must match rewards count (1:1).")
         
-    post_media_list = media if isinstance(media, list) else ([media] if media else [])
+    campaign_media_list = media if isinstance(media, list) else ([media] if media else [])
     manifest = json.loads(media_manifest) if media_manifest else []
         
-    post = await service.create_post(
-        db=db, clerk_id=clerk_id, post_data=post_obj,
-        post_media=post_media_list,
-        post_media_manifest=manifest,
-        campaigns=camp_list_raw, campaign_media=camp_media_list,
+    campaign = await service.create_campaign(
+        db=db, clerk_id=clerk_id, campaign_data=campaign_obj,
+        campaign_media=campaign_media_list,
+        campaign_media_manifest=manifest,
+        informations=info_list_raw, information_media=info_media_list,
         rewards=reward_list_raw, reward_media=reward_media_list,
     )
     
-        # ✅ async embedding
     if background_tasks:
-        background_tasks.add_task(generate_post_embedding, post.id)
+        background_tasks.add_task(generate_campaign_embedding, campaign.id)
 
-    return post
+    return campaign
     
 
-@router.put("/{post_id}/with-campaigns", response_model=schema.PostOut)
+@router.put("/{campaign_id}/with-informations", response_model=schema.CampaignOut)
 async def update(
-    post_id: UUID,
-    post_data: Union[str, None] = Form(None),
+    campaign_id: UUID,
+    campaign_data: Union[str, None] = Form(None),
     media: Union[List[UploadFile], UploadFile, None] = File(None),              
-    campaigns: Union[str, None] = Form(None),                                 
-    campaign_media: Union[List[UploadFile], UploadFile, None] = File(None),
+    informations: Union[str, None] = Form(None),                                 
+    information_media: Union[List[UploadFile], UploadFile, None] = File(None),
     rewards: Union[str, None] = Form(None),                                 
     reward_media: Union[List[UploadFile], UploadFile, None] = File(None),          
     clerk_id: str = Query(...),
@@ -157,35 +153,35 @@ async def update(
     media_reorder: Union[str, None] = Form(None),   
     background_tasks: BackgroundTasks = None,
 ):
-    # --- parse post_data ---
-    post_upd = None
-    if post_data:
+    # --- parse campaign_data ---
+    campaign_upd = None
+    if campaign_data:
         try:
-            post_upd = schema.PostUpdate(**json.loads(post_data))
+            campaign_upd = schema.CampaignUpdate(**json.loads(campaign_data))
         except Exception:
-            raise HTTPException(status_code=400, detail="Invalid post_data")
+            raise HTTPException(status_code=400, detail="Invalid campaign_data")
 
     # --- normalize media fields ---
-    post_media_list: Optional[List[UploadFile]] = None
+    campaign_media_list: Optional[List[UploadFile]] = None
     if media is not None:
-        post_media_list = media if isinstance(media, list) else [media]
+        campaign_media_list = media if isinstance(media, list) else [media]
 
-    camp_media_list: Optional[List[UploadFile]] = None
-    if campaign_media is not None:
-        camp_media_list = campaign_media if isinstance(campaign_media, list) else [campaign_media]
+    info_media_list: Optional[List[UploadFile]] = None
+    if information_media is not None:
+        info_media_list = information_media if isinstance(information_media, list) else [information_media]
 
     reward_media_list: Optional[List[UploadFile]] = None
     if reward_media is not None:
         reward_media_list = reward_media if isinstance(reward_media, list) else [reward_media]
 
-    # --- parse campaigns manifest (list[dict]) ---
-    camp_payload = None
-    if campaigns:
-        parsed = json.loads(campaigns)
-        if not isinstance(parsed, list): raise HTTPException(status_code=400, detail="Invalid campaigns payload")
+    # --- parse informations manifest (list[dict]) ---
+    info_payload = None
+    if informations:
+        parsed = json.loads(informations)
+        if not isinstance(parsed, list): raise HTTPException(status_code=400, detail="Invalid informations payload")
         for it in parsed:
-            if not isinstance(it, dict) or "display_order" not in it: raise HTTPException(status_code=400, detail="Invalid campaigns payload")
-        camp_payload = parsed
+            if not isinstance(it, dict) or "display_order" not in it: raise HTTPException(status_code=400, detail="Invalid informations payload")
+        info_payload = parsed
 
     reward_payload = None
     if rewards:
@@ -195,50 +191,49 @@ async def update(
             if not isinstance(it, dict) or "display_order" not in it: raise HTTPException(status_code=400, detail="Invalid rewards payload")
         reward_payload = parsed
 
-    post_media_list = media if isinstance(media, list) else ([media] if media else None)
+    campaign_media_list = media if isinstance(media, list) else ([media] if media else None)
     media_manifest_parsed = json.loads(media_manifest) if media_manifest else None
     reorder_list = json.loads(media_reorder) if media_reorder else None
 
     # --- call service ---
-    post = await service.update_post(
+    campaign = await service.update_campaign(
         db=db,
-        post_id=post_id,
+        campaign_id=campaign_id,
         clerk_id=clerk_id,
-        post_data=post_upd,
-        post_media=post_media_list,    
-        campaigns_payload=camp_payload,  
-        campaign_media=camp_media_list,
+        campaign_data=campaign_upd,
+        campaign_media=campaign_media_list,    
+        informations_payload=info_payload,  
+        information_media=info_media_list,
         rewards_payload=reward_payload,  
         reward_media=reward_media_list,
-        post_media_manifest=media_manifest_parsed,           
-        post_media_reorder=reorder_list, 
+        campaign_media_manifest=media_manifest_parsed,           
+        campaign_media_reorder=reorder_list, 
     )
-    # ✅ ถ้ามี post_data แปลว่า content อาจเปลี่ยน → regenerate embedding
-    if background_tasks and post_data:
-        background_tasks.add_task(generate_post_embedding, post_id)
+    if background_tasks and campaign_data:
+        background_tasks.add_task(generate_campaign_embedding, campaign_id)
 
-    return post
+    return campaign
     
-@router.put("/{post_id}/state", response_model=schema.PostOut)
-def update_post_state(
-    post_id: UUID,
-    state: schema.PostState = Query(...),
+@router.put("/{campaign_id}/state", response_model=schema.CampaignOut)
+def update_campaign_state(
+    campaign_id: UUID,
+    state: schema.CampaignState = Query(...),
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ): 
     try:
         clerk_id = current_user["sub"]
-        service.verify_post_owner(db, post_id, clerk_id)
-        return service.change_post_state(db, post_id, state)
+        service.verify_campaign_owner(db, campaign_id, clerk_id)
+        return service.change_campaign_state(db, campaign_id, state)
     except ValueError:
         raise HTTPException(status_code=404, detail="Not found")
 
-@router.get("/{post_id}/community", response_model=schema.PostCommunityOut)
-async def get_post_community(post_id: UUID, db: Session = Depends(get_db)):
+@router.get("/{campaign_id}/community", response_model=schema.CampaignCommunityOut)
+async def get_campaign_community(campaign_id: UUID, db: Session = Depends(get_db)):
     try:
-        return await service.get_post_community_stats(db, post_id)
+        return await service.get_campaign_community_stats(db, campaign_id)
     except ValueError:
-        raise HTTPException(status_code=404, detail="Post not found")
+        raise HTTPException(status_code=404, detail="Campaign not found")
   
 # @router.post("/predict/{post_id}")
 # async def predict_post(post_id: UUID, db: Session = Depends(get_db)):

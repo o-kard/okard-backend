@@ -7,7 +7,7 @@ from src.modules.for_you.schema import ForYouResponse
 from src.modules.for_you.service import for_you
 from src.modules.user.repo import get_user_by_clerk_id
 
-router = APIRouter(prefix="/post", tags=["Post"])
+router = APIRouter(prefix="/campaign", tags=["Campaign"])
 
 @router.get(
     "/for-you",

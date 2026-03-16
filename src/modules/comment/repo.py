@@ -7,7 +7,7 @@ from src.modules.user import model as user_model
 
 def create_comment(db: Session, comment_data: schema.CommentCreate, user_id: UUID):
     comment = model.Comment(
-        post_id=comment_data.post_id,
+        campaign_id=comment_data.campaign_id,
         user_id=user_id,
         parent_id=comment_data.parent_id,
         content=comment_data.content,
@@ -17,7 +17,7 @@ def create_comment(db: Session, comment_data: schema.CommentCreate, user_id: UUI
     db.refresh(comment)
     return comment
 
-def lists_comments(db: Session, post_id: UUID, viewer_user_id: UUID | None):
+def lists_comments(db: Session, campaign_id: UUID, viewer_user_id: UUID | None):
     if viewer_user_id:
         like_expr = exists(
             select(1).where(
@@ -39,7 +39,7 @@ def lists_comments(db: Session, post_id: UUID, viewer_user_id: UUID | None):
             joinedload(model.Comment.author).joinedload(user_model.User.media),
         )
         .filter(
-            model.Comment.post_id == post_id,
+            model.Comment.campaign_id == campaign_id,
             model.Comment.parent_id.is_(None),
         )
         .order_by(model.Comment.created_at.asc())

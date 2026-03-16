@@ -22,9 +22,9 @@ async def add_comment(
     
     return await service.add_comment(db, comment_obj, clerk_id)
 
-@router.get("/post/{post_id}", response_model=List[schema.CommentOut])
-async def list_comments(post_id: UUID, clerk_id: str | None = Query(None), db: Session = Depends(get_db)):
-    return await service.list_comments(db, post_id, clerk_id)
+@router.get("/campaign/{campaign_id}", response_model=List[schema.CommentOut])
+async def list_comments(campaign_id: UUID, clerk_id: str | None = Query(None), db: Session = Depends(get_db)):
+    return await service.list_comments(db, campaign_id, clerk_id)
 
 @router.put("/{comment_id}/like")
 async def like_comment(

@@ -2,10 +2,10 @@ from sqlalchemy.orm import Session
 from . import model, schema
 from uuid import UUID
 
-def list_progress(db: Session, post_id: UUID | None = None):
+def list_progress(db: Session, campaign_id: UUID | None = None):
     query = db.query(model.Progress)
-    if post_id:
-        query = query.filter(model.Progress.post_id == post_id)
+    if campaign_id:
+        query = query.filter(model.Progress.campaign_id == campaign_id)
     return query.all()
 
 def get_progress(db: Session, progress_id: UUID):

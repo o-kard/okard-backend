@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from src.modules.user.model import User
-from src.modules.post.model import Post
+from src.modules.campaign.model import Campaign
 
 class SearchRepository:
 
@@ -18,12 +18,12 @@ class SearchRepository:
         )
 
     @staticmethod
-    def search_posts(db: Session, query: str):
+    def search_campaigns(db: Session, query: str):
         return (
-            db.query(Post)
+            db.query(Campaign)
             .filter(
-                (Post.post_header.ilike(f"%{query}%")) |
-                (Post.post_description.ilike(f"%{query}%"))
+                (Campaign.campaign_header.ilike(f"%{query}%")) |
+                (Campaign.campaign_description.ilike(f"%{query}%"))
             )
             .limit(10)
             .all()

@@ -12,7 +12,7 @@ class Notification(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("user.id"))
     actor_id = Column(UUID(as_uuid=True), ForeignKey("user.id"), nullable=True)
-    post_id = Column(UUID(as_uuid=True), ForeignKey("post.id"), nullable=True)
+    campaign_id = Column(UUID(as_uuid=True), ForeignKey("campaign.id"), nullable=True)
     notification_title = Column(String, nullable=False)
     notification_message = Column(String, nullable=True)
     type = Column(Enum(NotificationType), nullable=False)

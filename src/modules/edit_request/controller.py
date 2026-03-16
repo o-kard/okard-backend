@@ -28,8 +28,8 @@ def get_edit_request(request_id: UUID, db: Session = Depends(get_db)):
 
 
 @router.get("/", response_model=list[schema.EditRequestOut])
-def list_pending_requests(post_id: UUID, db: Session = Depends(get_db)):
-    return service.get_pending_requests(db, post_id)
+def list_pending_requests(campaign_id: UUID, db: Session = Depends(get_db)):
+    return service.get_pending_requests(db, campaign_id)
 
 @router.post("/{request_id}/vote", response_model=schema.VoteOut)
 async def cast_vote(
@@ -38,7 +38,7 @@ async def cast_vote(
     clerk_id: str,
     db: Session = Depends(get_db)
 ):
-    user = get_user_by_clerk_id(db, clerk_id)
+    user = await get_user_by_clerk_id(db, clerk_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     

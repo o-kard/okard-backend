@@ -21,7 +21,7 @@ class SearchService:
     def search(db: Session, query: str, request: Request) -> SearchResponse:
 
         # users = SearchRepository.search_users(db, query)
-        posts = SearchRepository.search_posts(db, query)
+        campaigns = SearchRepository.search_campaigns(db, query)
 
         results = []
 
@@ -44,11 +44,10 @@ class SearchService:
         #         thumbnail=thumbnail,
         #         creator=None
         #     ))
-
         # -----------------------
-        # POST SEARCH
+        # CAMPAIGN SEARCH
         # -----------------------
-        for p in posts:
+        for p in campaigns:
 
             thumbnail = None
             if p.media and len(p.media) > 0:
@@ -66,8 +65,8 @@ class SearchService:
 
             results.append(SearchResult(
                 id=p.id,
-                type="post",
-                name=p.post_header,
+                type="campaign",
+                name=p.campaign_header,
                 thumbnail=thumbnail,
                 creator=creator_name
             ))

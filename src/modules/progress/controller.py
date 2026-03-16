@@ -9,8 +9,8 @@ from . import schema, service
 router = APIRouter(prefix="/progress", tags=["Progress"])
 
 @router.get("", response_model=list[schema.ProgressOut])
-def list_progress(post_id: Optional[UUID] = None, db: Session = Depends(get_db)):
-    return service.list_progress(db, post_id)
+def list_progress(campaign_id: Optional[UUID] = None, db: Session = Depends(get_db)):
+    return service.list_progress(db, campaign_id)
 
 @router.get("/{progress_id}", response_model=schema.ProgressOut)
 def get_progress(progress_id: UUID, db: Session = Depends(get_db)):

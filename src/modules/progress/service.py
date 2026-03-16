@@ -15,8 +15,8 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 def _abs(rel: str) -> str:
    return (BASE_DIR / rel.lstrip("/")).as_posix()
 
-def list_progress(db: Session, post_id: UUID | None = None):
-    return repo.list_progress(db, post_id)
+def list_progress(db: Session, campaign_id: UUID | None = None):
+    return repo.list_progress(db, campaign_id)
 
 def get_progress(db: Session, progress_id: UUID):
     progress = repo.get_progress(db, progress_id)

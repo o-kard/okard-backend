@@ -4,14 +4,14 @@ from uuid import UUID
 from . import model
 from src.modules.user.model import User
 
-def get_by_user_and_post(db: Session, user_id: UUID, post_id: UUID):
+def get_by_user_and_campaign(db: Session, user_id: UUID, campaign_id: UUID):
     return db.query(model.Contributor).filter(
         model.Contributor.user_id == user_id,
-        model.Contributor.post_id == post_id
+        model.Contributor.campaign_id == campaign_id
     ).first()
 
-def create(db: Session, user_id: UUID, post_id: UUID, amount: int):
-    c = model.Contributor(user_id=user_id, post_id=post_id, total_amount=amount)
+def create(db: Session, user_id: UUID, campaign_id: UUID, amount: int):
+    c = model.Contributor(user_id=user_id, campaign_id=campaign_id, total_amount=amount)
     db.add(c)
     
     # Increment user's contribution number

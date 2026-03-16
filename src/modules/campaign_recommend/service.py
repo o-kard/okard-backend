@@ -4,15 +4,15 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 from . import repo
 
-def recommend_by_post(db: Session, post_id: UUID, top_k: int = 5):
-    source = repo.get_post_by_id(db, post_id)
+def recommend_by_campaign(db: Session, campaign_id: UUID, top_k: int = 5):
+    source = repo.get_campaign_by_id(db, campaign_id)
     if not source:
-        raise ValueError("Post not found")
+        raise ValueError("Campaign not found")
 
     # ✅ fallback ถ้า embedding ยังไม่พร้อม
     if not source.embedding_data or not source.embedding_data.embedding:
-        posts = repo.fallback_same_category(db, source, top_k)
-        return [{"post_id": p.id, "score": 0.0} for p in posts]
+        campaigns = repo.fallback_same_category(db, source, top_k)
+        return [{"campaign_id": p.id, "score": 0.0} for p in campaigns]
 
     source_vec = np.array(json.loads(source.embedding_data.embedding))
 
@@ -30,4 +30,4 @@ def recommend_by_post(db: Session, post_id: UUID, top_k: int = 5):
             continue
 
     scored.sort(key=lambda x: x[1], reverse=True)
-    return [{"post_id": pid, "score": s} for pid, s in scored[:top_k]]
+    return [{"campaign_id": pid, "score": s} for pid, s in scored[:top_k]]

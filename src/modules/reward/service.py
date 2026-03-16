@@ -54,7 +54,7 @@ async def create_reward_with_media(
         db_rewards.append(db_reward)
 
     if db_rewards:
-        calculate_backup_amounts_for_post(db, db_rewards[0].post_id)
+        calculate_backup_amounts_for_campaign(db, db_rewards[0].campaign_id)
 
     return db_rewards
 
@@ -86,7 +86,7 @@ async def update_reward_with_media(
         files=files,
         media_manifest=None
     )
-    calculate_backup_amounts_for_post(db, db_reward.post_id)
+    calculate_backup_amounts_for_campaign(db, db_reward.campaign_id)
 
     return db_reward
 
@@ -101,8 +101,8 @@ def delete_reward(db: Session, reward_id: UUID):
                 os.remove(ap)
         media_repo.delete_media(db, media)
     
-    calculate_backup_amounts_for_post(db, db_reward.post_id)
+    calculate_backup_amounts_for_campaign(db, db_reward.campaign_id)
     return repo.delete_reward(db, db_reward)
 
-def calculate_backup_amounts_for_post(db: Session, post_id: UUID):
-    repo.calculate_backup_amounts_for_post(db, post_id)
+def calculate_backup_amounts_for_campaign(db: Session, campaign_id: UUID):
+    repo.calculate_backup_amounts_for_campaign(db, campaign_id)
