@@ -7,7 +7,7 @@ from src.modules.model.mapping import OUTPUT_MAPPINGS
 from src.modules.model.loader import preprocess
 from . import repo, model, loader
 
-async def predict(db: Session, data: schema.InputData, post_id: UUID = None, save: bool = False):
+async def predict(db: Session, data: schema.InputData, campaign_id: UUID = None, save: bool = False):
     x_num, x_cat = preprocess(data)
     loader.model.eval()
     with torch.no_grad():
@@ -32,7 +32,7 @@ async def predict(db: Session, data: schema.InputData, post_id: UUID = None, sav
     print("==================================\n")
 
 
-    # Rule-based Post-Processing
+    # Rule-based Campaign-Processing
     from datetime import datetime
     try:
         start = datetime.fromisoformat(data.start_date)
@@ -69,8 +69,8 @@ async def predict(db: Session, data: schema.InputData, post_id: UUID = None, sav
         pass
 
     if save:
-        if not post_id:
-            raise ValueError("post_id is required to save prediction results.")
-        return repo.save_prediction_results(db, post_id, results)
+        if not campaign_id:
+            raise ValueError("campaign_id is required to save prediction results.")
+        return repo.save_prediction_results(db, campaign_id, results)
     else:
         return results

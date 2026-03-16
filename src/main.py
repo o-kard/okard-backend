@@ -4,10 +4,10 @@ from src.modules.test.model import Base
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.modules.test import model as test_model
-from src.modules.post import model as post_model
+from src.modules.campaign import model as campaign_model
 from src.modules.media import model as media_model
 from src.modules.user import model as user_model
-from src.modules.campaign import model as campaign_model
+from src.modules.information import model as information_model
 from src.modules.reward import model as reward_model
 from src.modules.contributor import model as contributor_model
 from src.modules.creator import model as creator_model
@@ -18,7 +18,7 @@ from src.modules.notification import model as notification_model
 from src.modules.progress import model as progress_model
 
 from src.modules.test.controller import router as test_router
-from src.modules.post.controller import router as post_router
+from src.modules.campaign.controller import router as campaign_router
 from src.modules.media.controller import router as media_router
 from src.modules.user.controller import router as user_router
 from src.modules.creator.controller import router as creator_router
@@ -37,8 +37,7 @@ from src.modules.contributor.controller import router as contributor_router
 
 from src.modules.search.controller import router as search_router
 from src.modules.for_you.controller import router as for_you_router
-from src.modules.post_recommend.controller import router as post_recommend_router
-from src.modules.progress.controller import router as progress_router
+from src.modules.campaign_recommend.controller import router as campaign_recommend_router
 from src.modules.bookmark.controller import router as bookmark_router
 
 from fastapi.staticfiles import StaticFiles
@@ -59,32 +58,32 @@ import asyncio
 from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 from src.database.db import SessionLocal
-from src.modules.common.enums import PostState
+from src.modules.common.enums import CampaignState
 
-async def expire_posts_task():
+async def expire_campaigns_task():
     while True:
         try:
             db = SessionLocal()
             now_utc = datetime.now(timezone.utc)
-            # Find published posts that have passed their end date
-            expired_posts = db.query(post_model.Post).filter(
-                post_model.Post.state == PostState.published,
-                post_model.Post.effective_end_date != None,
-                post_model.Post.effective_end_date < now_utc
+            # Find published campaigns that have passed their end date
+            expired_campaigns = db.query(campaign_model.Campaign).filter(
+                campaign_model.Campaign.state == CampaignState.published,
+                campaign_model.Campaign.effective_end_date != None,
+                campaign_model.Campaign.effective_end_date < now_utc
             ).all()
 
-            for post in expired_posts:
-                if post.goal_amount and post.current_amount >= post.goal_amount:
-                    post.state = PostState.success
+            for campaign in expired_campaigns:
+                if campaign.goal_amount and campaign.current_amount >= campaign.goal_amount:
+                    campaign.state = CampaignState.success
                 else:
-                    post.state = PostState.fail
+                    campaign.state = CampaignState.fail
 
-            if expired_posts:
+            if expired_campaigns:
                 db.commit()
             
             db.close()
         except Exception as e:
-            print(f"Error in expire_posts_task: {e}")
+            print(f"Error in expire_campaigns_task: {e}")
         
         # Run every 5 minutes
         await asyncio.sleep(300)
@@ -92,7 +91,7 @@ async def expire_posts_task():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: spawn the background task
-    task = asyncio.create_task(expire_posts_task())
+    task = asyncio.create_task(expire_campaigns_task())
     yield
     # Shutdown: cancel the task
     task.cancel()
@@ -129,7 +128,7 @@ def read_root():
 
 app.include_router(test_router, prefix="/api")
 app.include_router(for_you_router, prefix="/api")
-app.include_router(post_router, prefix="/api")
+app.include_router(campaign_router, prefix="/api")
 app.include_router(user_router, prefix="/api")
 app.include_router(media_router, prefix="/api")
 app.include_router(country_router, prefix="/api")
@@ -139,7 +138,7 @@ app.include_router(predict_router, prefix="/api")
 app.include_router(notification_router, prefix="/api")
 app.include_router(dashboard_router, prefix="/api")
 app.include_router(search_router, prefix="/api")
-app.include_router(post_recommend_router, prefix="/api")
+app.include_router(campaign_recommend_router, prefix="/api")
 app.include_router(home_router, prefix="/api")
 app.include_router(progress_router, prefix="/api")
 app.include_router(edit_request_router, prefix="/api")

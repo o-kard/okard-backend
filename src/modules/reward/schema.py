@@ -12,7 +12,7 @@ class RewardBase(BaseModel):
     backup_amount: int
 
 class RewardCreate(RewardBase):
-    post_id: UUID
+    campaign_id: UUID
 
 class RewardUpdate(BaseModel):
     reward_header: Optional[str] = None    
@@ -20,7 +20,7 @@ class RewardUpdate(BaseModel):
     display_order: Optional[int] = None
     reward_amount: Optional[int] = None
     backup_amount: Optional[int] = None
-    post_id: Optional[UUID] = None
+    campaign_id: Optional[UUID] = None
 
 class RewardOut(RewardBase):
     id: UUID

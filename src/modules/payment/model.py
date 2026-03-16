@@ -12,7 +12,7 @@ class Payment(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("user.id"),)
     amount = Column(Integer, default=0)
-    post_id = Column(UUID(as_uuid=True), ForeignKey("post.id"),)
+    campaign_id = Column(UUID(as_uuid=True), ForeignKey("campaign.id"),)
     created_at = Column(
         DateTime(timezone=True),
         nullable=False,

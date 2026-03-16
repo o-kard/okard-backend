@@ -10,7 +10,7 @@ class Report(Base):
     __tablename__ = "report"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    post_id = Column(UUID(as_uuid=True), ForeignKey("post.id"), nullable=True)
+    campaign_id = Column(UUID(as_uuid=True), ForeignKey("campaign.id"), nullable=True)
     reporter_id = Column(UUID(as_uuid=True), ForeignKey("user.id"), nullable=False)
     type = Column(Enum(ReportType), nullable=False)
     header = Column(String, nullable=True)

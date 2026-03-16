@@ -29,21 +29,22 @@ def delete_reward(db: Session, db_reward: model.Reward):
     db.commit()
     return db_reward
 
-def calculate_backup_amounts_for_post(db: Session, post_id: UUID):
+def calculate_backup_amounts_for_campaign(db: Session, campaign_id: UUID):
     db.execute(
         text("""
         UPDATE reward r
         SET backup_amount = (
           SELECT COUNT(*)
           FROM contributor c
-          WHERE c.post_id = r.post_id
+          WHERE c.campaign_id = r.campaign_id
             AND c.total_amount >= r.reward_amount 
         )
-        WHERE r.post_id = :post_id
+        WHERE r.campaign_id = :campaign_id
         """),
-        {"post_id": str(post_id)}
+        {"campaign_id": str(campaign_id)}
     )
     db.commit()
-def list_by_post(db: Session, post_id: UUID) -> List[model.Reward]:
-    return db.query(model.Reward).filter(model.Reward.post_id == post_id).all()
+
+def list_by_campaign(db: Session, campaign_id: UUID) -> List[model.Reward]:
+    return db.query(model.Reward).filter(model.Reward.campaign_id == campaign_id).all()
 

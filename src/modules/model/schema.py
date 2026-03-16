@@ -16,7 +16,7 @@ class InputData(BaseModel):
     # current_amount: float
 
 class PredictionResult(BaseModel):
-    post_id: Optional[str] = None
+    campaign_id: Optional[str] = None
     success_label: str
     risk_label: str
     days_to_state_label: str

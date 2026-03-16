@@ -12,7 +12,7 @@ router = APIRouter(prefix="/reports", tags=["Reports"])
 
 @router.post("/", response_model=schema.ReportOut)
 async def create_report(
-    post_id: Optional[UUID] = Form(None),
+    campaign_id: Optional[UUID] = Form(None),
     type: ReportType = Form(...),
     header: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
@@ -21,7 +21,7 @@ async def create_report(
     db: Session = Depends(get_db)
 ):
     data = schema.ReportCreate(
-        post_id=post_id,
+        campaign_id=campaign_id,
         type=type,
         header=header,
         description=description

@@ -22,11 +22,11 @@ def get_media(media_id: UUID, db: Session = Depends(get_db)):
 async def upload_media(
     db: Session = Depends(get_db),
     file: UploadFile = File(...),
-    post_id: UUID | None = Form(None),
+    campaign_id: UUID | None = Form(None),
     clerk_id: str | None = Form(None),
 ):
-    print(f"Received upload request: post_id={post_id}, user_id={clerk_id}, file={file.filename}")
-    return await service.create_media_from_upload(db, file, post_id, clerk_id)
+    print(f"Received upload request: campaign_id={campaign_id}, user_id={clerk_id}, file={file.filename}")
+    return await service.create_media_from_upload(db, file, campaign_id, clerk_id)
 
 @router.delete("/{media_id}", response_model=schema.MediaOut)
 def delete_media(media_id: UUID, db: Session = Depends(get_db)):

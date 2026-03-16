@@ -9,10 +9,10 @@ class ProgressBase(BaseModel):
     progress_description: Optional[str] = None
 
 class ProgressCreate(ProgressBase):
-    post_id: UUID
+    campaign_id: UUID
 
 class ProgressUpdate(ProgressBase):
-    post_id: Optional[UUID] = None
+    campaign_id: Optional[UUID] = None
 
 class ProgressOut(ProgressBase):
     id: UUID

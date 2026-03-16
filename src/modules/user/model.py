@@ -27,7 +27,7 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
-    posts = relationship("Post", back_populates="user")
+    campaigns = relationship("Campaign", back_populates="user")
 
     media = relationship(
         "Media",

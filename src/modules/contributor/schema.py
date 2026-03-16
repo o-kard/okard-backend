@@ -4,11 +4,11 @@ from datetime import datetime
 from typing import Optional
 
 
-from src.modules.post.schema import PostSummaryOut
+from src.modules.campaign.schema import CampaignSummaryOut
 
 class ContributorBase(BaseModel):
     user_id: UUID
-    post_id: UUID
+    campaign_id: UUID
     total_amount: int = 0
 
 class ContributorCreate(ContributorBase):
@@ -24,6 +24,6 @@ class ContributorOut(ContributorBase):
     class Config:
         from_attributes = True
 
-class ContributorWithPostOut(ContributorOut):
-    post: PostSummaryOut
+class ContributorWithCampaignOut(ContributorOut):
+    campaign: CampaignSummaryOut
 

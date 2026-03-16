@@ -6,7 +6,7 @@ from src.modules.common.enums import ReportType, ReportStatus
 from src.modules.media.schema import MediaOut
 
 class ReportBase(BaseModel):
-    post_id: Optional[UUID] = None
+    campaign_id: Optional[UUID] = None
     type: ReportType
     header: Optional[str] = None
     description: Optional[str] = None

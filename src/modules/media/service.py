@@ -20,7 +20,7 @@ minio_service = MinioService()
 async def create_media_from_upload(
     db: Session, 
     file: UploadFile,
-    post_id: Optional[UUID] = None,
+    campaign_id: Optional[UUID] = None,
     clerk_id: Optional[str] = None,
 ):
     ref_id = None
@@ -43,11 +43,11 @@ async def create_media_from_upload(
         ref_id = user.id
         ref_type = ReferenceType.user
             
-    elif post_id:
-        ref_id = post_id
-        ref_type = ReferenceType.post
+    elif campaign_id:
+        ref_id = campaign_id
+        ref_type = ReferenceType.campaign
     else:
-        raise ValueError("Either post_id or user_id is required")
+        raise ValueError("Either campaign_id or user_id is required")
     
     content = await file.read()
     
@@ -161,10 +161,10 @@ async def _save_files_and_create_media(
         ref_type = None
         if parent_type == "reward":
             ref_type = ReferenceType.reward
-        elif parent_type == "post":
-            ref_type = ReferenceType.post
         elif parent_type == "campaign":
             ref_type = ReferenceType.campaign
+        elif parent_type == "information":
+            ref_type = ReferenceType.information
         elif parent_type == "progress":
             ref_type = ReferenceType.progress
         elif parent_type == "report":

@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 
 def create_report(db: Session, reporter_id: UUID, data: schema.ReportCreate) -> model.Report:
     db_obj = model.Report(
-        post_id=data.post_id,
+        campaign_id=data.campaign_id,
         reporter_id=reporter_id,
         type=data.type,
         header=data.header,
