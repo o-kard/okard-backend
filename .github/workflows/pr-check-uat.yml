@@ -29,6 +29,8 @@ jobs:
         run: uv run ruff check . --select=E9,F63,F7,F82
 
       - name: Smoke Test Application Boot (Check for Module Errors)
+        env:
+          DATABASE_URL: "postgresql://dummy:dummy@localhost:5432/dummy"
         run: uv run python -c "import src.database.models"
 
       # ไฮไลต์สำคัญ: ด่านตรวจจับ Multiple Heads!
