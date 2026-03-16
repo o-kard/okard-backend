@@ -29,7 +29,7 @@ class InvestorCountryStat(BaseModel):
 class TrendingCampaign(BaseModel):
     campaign_id: UUID
     campaign_header: str
-    payment_count: int
+    donate_count: int
 
     class Config:
         from_attributes = True
