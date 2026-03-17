@@ -22,6 +22,7 @@ from src.modules.campaign_recommend import schema as recommend_schema
 
 from src.modules.for_you import service as for_you_service
 from src.modules.for_you import schema as for_you_schema
+from src.modules.common.file_utils import validate_image_size
 
 router = APIRouter(prefix="/campaign", tags=["Campaign"])
 
@@ -88,6 +89,8 @@ async def create(
     campaign_media_list: Optional[List[UploadFile]] = None
     if media is not None:
         campaign_media_list = media if isinstance(media, list) else [media]
+        for f in campaign_media_list:
+            validate_image_size(f)
 
     info_list_raw = None
     if informations:
@@ -100,6 +103,8 @@ async def create(
     info_media_list: Optional[List[UploadFile]] = None
     if information_media is not None:
         info_media_list = information_media if isinstance(information_media, list) else [information_media]
+        for f in info_media_list:
+            validate_image_size(f)
 
     reward_list_raw = None
     if rewards:
@@ -112,6 +117,8 @@ async def create(
     reward_media_list = None
     if reward_media is not None:
         reward_media_list = reward_media if isinstance(reward_media, list) else [reward_media]
+        for f in reward_media_list:
+            validate_image_size(f)
 
     if not info_list_raw or len(info_list_raw) == 0:
         raise HTTPException(status_code=400, detail="At least one information entry is required.")
@@ -167,14 +174,20 @@ async def update(
     campaign_media_list: Optional[List[UploadFile]] = None
     if media is not None:
         campaign_media_list = media if isinstance(media, list) else [media]
+        for f in campaign_media_list:
+            validate_image_size(f)
 
     info_media_list: Optional[List[UploadFile]] = None
     if information_media is not None:
         info_media_list = information_media if isinstance(information_media, list) else [information_media]
+        for f in info_media_list:
+            validate_image_size(f)
 
     reward_media_list: Optional[List[UploadFile]] = None
     if reward_media is not None:
         reward_media_list = reward_media if isinstance(reward_media, list) else [reward_media]
+        for f in reward_media_list:
+            validate_image_size(f)
 
     # --- parse informations manifest (list[dict]) ---
     info_payload = None

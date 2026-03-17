@@ -29,6 +29,7 @@ class UserUpdate(UserBase):
 
 class UserResponse(UserBase):
     id: UUID
+    clerk_id: str
     contribution_number: int
     media: MediaOut | None = None
     country: CountryOut | None = None
@@ -46,6 +47,7 @@ class UserExistsResponse(BaseModel):
         
 class UserPublicResponse(BaseModel):
     id: UUID
+    clerk_id: str
     username: str
     first_name: str | None = None
     surname: str | None = None

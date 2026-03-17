@@ -9,13 +9,13 @@ def get_top_pledged_campaigns(
     limit: int = 10,
     category: str | None = None,
 ):
-    posts = get_top_pledged_posts(
+    campaigns = get_top_pledged_posts(
         db=db,
         limit=limit,
         category=category,
     )
 
-    return posts
+    return campaigns
 
 def get_category_stats_service(db: Session) -> list[CategoryStat]:
     rows = get_category_stats(db)

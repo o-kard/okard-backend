@@ -13,6 +13,9 @@ class SearchService:
         if not path:
             return None
 
+        if path.startswith("http://") or path.startswith("https://"):
+            return path
+
         path = path.lstrip("/")  
         base_url = f"{request.url.scheme}://{request.client.host}:8000"
         return f"{base_url}/{path}"
