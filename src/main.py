@@ -139,4 +139,4 @@ app.include_router(edit_request_router, prefix="/api")
 app.include_router(report_router, prefix="/api")
 app.include_router(creator_router, prefix="/api")
 app.include_router(contributor_router, prefix="/api")
-app.include_router(bookmark_router, prefix="/api")
+app.include_router(bookmark_router, prefix="/api") # this comment is for image trigger
