@@ -7,6 +7,7 @@ metadata:
     argocd-image-updater.argoproj.io/image-list: backend=ghcr.io/o-kard/okard-backend
     argocd-image-updater.argoproj.io/backend.update-strategy: latest
     argocd-image-updater.argoproj.io/write-back-method: argocd
+    argocd-image-updater.argoproj.io/backend.allow-tags: regexp:^uat-.*$
 spec:
   project: default
   source:

@@ -8,7 +8,7 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
   CACHE_TYPE: registry
-  CACHE_REF: ghcr.io/o-kard/okard-backend:buildcache
+  CACHE_REF: ghcr.io/o-kard/okard-backend:buildcache-uat
 
 jobs:
   build-and-push:
@@ -37,7 +37,7 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:uat-latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:uat-${{ github.sha }}
           cache-from: type=${{ env.CACHE_TYPE }},ref=${{ env.CACHE_REF }}
           cache-to: type=${{ env.CACHE_TYPE }},ref=${{ env.CACHE_REF }},mode=max
