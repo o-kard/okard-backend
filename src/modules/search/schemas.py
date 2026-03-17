@@ -4,7 +4,7 @@ from typing import Optional
 
 class SearchResult(BaseModel):
     id: UUID
-    type: str    # "user" | "post"
+    type: str    # "user" | "campaign"
     name: str
     thumbnail: Optional[str] = None
     creator: Optional[str] = None

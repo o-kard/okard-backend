@@ -2,6 +2,7 @@
 from sqlalchemy.orm import Session
 from . import model, schema
 from uuid import UUID
+from src.modules.common.enums import UserStatus
 
 def get_user_by_clerk_id(db: Session, clerk_id: str):
     return db.query(model.User).filter(model.User.clerk_id == clerk_id).first()
@@ -39,4 +40,10 @@ def delete_user(db: Session, user_id: UUID):
     if user:
         db.delete(user)
         db.commit()
+    return user
+
+def suspend_user(db: Session, user: model.User):
+    user.status = UserStatus.suspended
+    db.commit()
+    db.refresh(user)
     return user

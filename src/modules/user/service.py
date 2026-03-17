@@ -41,3 +41,9 @@ async def get_user_by_id(db: Session, user_id: UUID):
 
 def delete_user(db: Session, user_id: UUID):
     return repo.delete_user(db, user_id)
+
+async def suspend_user(db: Session, user_id: UUID):
+    user = await get_user_by_id(db, user_id)
+    if user:
+        return repo.suspend_user(db, user)
+    return None

@@ -11,7 +11,8 @@ from . import model, repo
 from fastapi import UploadFile
 from typing import Optional
 from src.modules.common.enums import ReferenceType
-from src.modules.common.minio_service import MinioService
+from src.modules.common.clerk_helper import update_clerk_user_password
+from src.modules.common.file_utils import validate_image_size
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 
@@ -49,14 +50,9 @@ async def create_media_from_upload(
     else:
         raise ValueError("Either campaign_id or user_id is required")
     
-    content = await file.read()
+    validate_image_size(file)
     
-    is_video = file.content_type and file.content_type.startswith("video/")
-    max_size = 50 * 1024 * 1024 if is_video else 5 * 1024 * 1024
-    limit_label = "50MB" if is_video else "5MB"
-
-    if len(content) > max_size:
-        raise HTTPException(status_code=400, detail=f"File {file.filename} exceeds {limit_label} limit")
+    content = await file.read()
     
     allowed_types = ["image/jpeg", "image/png", "image/gif", "image/webp", "video/mp4", "video/quicktime", "video/webm"]
     if file.content_type not in allowed_types:
@@ -125,14 +121,8 @@ async def _save_files_and_create_media(
                 order_map[fn] = int(it.get("display_order") or start_index)
 
     for i, file in enumerate(files, start=start_index):
+        validate_image_size(file)
         content = await file.read()
-        
-        is_video = file.content_type and file.content_type.startswith("video/")
-        max_size = 50 * 1024 * 1024 if is_video else 5 * 1024 * 1024
-        limit_label = "50MB" if is_video else "5MB"
-
-        if len(content) > max_size:
-            raise HTTPException(status_code=400, detail=f"File {file.filename} exceeds {limit_label} limit")
         
         allowed_types = ["image/jpeg", "image/png", "image/gif", "image/webp", "video/mp4", "video/quicktime", "video/webm"]
         if file.content_type not in allowed_types:

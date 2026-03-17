@@ -123,3 +123,13 @@ async def delete_user(
     if not user_response:
         raise HTTPException(status_code=404, detail="User not found")
     return user_response
+
+@router.put("/{user_id}/suspend", response_model=schema.UserResponse)
+async def suspend_user(
+    user_id: UUID,
+    db: Session = Depends(get_db)
+):
+    user = await service.suspend_user(db, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user

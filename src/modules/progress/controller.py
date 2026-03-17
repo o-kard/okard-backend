@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 from src.database.db import get_db
 from . import schema, service
+from src.modules.common.file_utils import validate_image_size
 
 router = APIRouter(prefix="/progress", tags=["Progress"])
 
@@ -33,6 +34,8 @@ async def create_progress(
     files_list = []
     if images:
         files_list = images if isinstance(images, list) else [images]
+        for f in files_list:
+            validate_image_size(f)
 
     return await service.create_progress_with_images(db, data, files_list)
 
@@ -51,6 +54,8 @@ async def update_progress(
     files_list = None
     if images:
         files_list = images if isinstance(images, list) else [images]
+        for f in files_list:
+            validate_image_size(f)
     
     try:
         return await service.update_progress_with_images(db, progress_id, data, files_list)
