@@ -13,6 +13,7 @@ from typing import Optional
 from src.modules.common.enums import ReferenceType
 from src.modules.common.clerk_helper import update_clerk_user_password
 from src.modules.common.file_utils import validate_image_size
+from src.modules.common.minio_service import MinioService
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 
