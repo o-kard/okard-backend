@@ -10,13 +10,13 @@ class InputData(BaseModel):
     end_date: str     
     country_displayable_name: str
     category_group: str
-    has_video: int
-    has_photo: int
+    has_video: bool
+    has_photo: bool
     created_at: Optional[str] = None
     # current_amount: float
 
 class PredictionResult(BaseModel):
-    post_id: Optional[str] = None
+    campaign_id: Optional[str] = None
     success_label: str
     risk_label: str
     days_to_state_label: str

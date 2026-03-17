@@ -12,7 +12,7 @@ class Contributor(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("user.id"), nullable=False)
-    post_id = Column(UUID(as_uuid=True), ForeignKey("post.id"), nullable=False)
+    campaign_id = Column(UUID(as_uuid=True), ForeignKey("campaign.id"), nullable=False)
     total_amount = Column(Integer, default=0)
     updated_at = Column(
         DateTime(timezone=True),
@@ -21,10 +21,10 @@ class Contributor(Base):
         onupdate=lambda: datetime.now(timezone.utc),
     )
 
-    post = relationship("Post", back_populates="contributors")
+    campaign = relationship("Campaign", back_populates="contributors")
 
     __table_args__ = (
-        UniqueConstraint("user_id", "post_id", name="uq_contributor_user_post"),
+        UniqueConstraint("user_id", "campaign_id", name="uq_contributor_user_campaign"),
     )
 
 

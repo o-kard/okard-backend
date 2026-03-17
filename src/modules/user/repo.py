@@ -33,3 +33,10 @@ def update_user(db: Session, clerk_id: str, user_data: schema.UserUpdate):
 
 def list_users(db: Session):
     return db.query(model.User).all()
+
+def delete_user(db: Session, user_id: UUID):
+    user = get_user_by_id(db, user_id)
+    if user:
+        db.delete(user)
+        db.commit()
+    return user

@@ -26,7 +26,7 @@ async def create_user(
 ):
     try:
         user_obj = schema.UserCreate(**json.loads(data))
-    except Exception:
+    except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid user data: {str(e)}")
 
     clerk_id = payload["sub"]

@@ -7,12 +7,12 @@ from src.modules.common.enums import EditRequestStatus
 from . import model
 from . import schema
 from src.modules.contributor.model import Contributor
-from src.modules.post.model import Post
+from src.modules.campaign.model import Campaign
 from src.modules.user.model import User
 
 def create_edit_request(db: Session, requester_id: UUID, data: schema.EditRequestCreate) -> model.EditRequest:
     db_obj = model.EditRequest(
-        post_id=data.post_id,
+        campaign_id=data.campaign_id,
         requester_id=requester_id,
         description=data.description,
         display_changes=data.display_changes,
@@ -27,10 +27,10 @@ def create_edit_request(db: Session, requester_id: UUID, data: schema.EditReques
 def get_edit_request(db: Session, request_id: UUID) -> model.EditRequest:
     return db.query(model.EditRequest).filter(model.EditRequest.id == request_id).first()
 
-def get_top_contributors(db: Session, post_id: UUID, limit: int = 11) -> List[Contributor]:
+def get_top_contributors(db: Session, campaign_id: UUID, limit: int = 11) -> List[Contributor]:
     return (
         db.query(Contributor)
-        .filter(Contributor.post_id == post_id)
+        .filter(Contributor.campaign_id == campaign_id)
         .order_by(desc(Contributor.total_amount))
         .limit(limit)
         .all()
@@ -69,8 +69,8 @@ def create_vote(db: Session, edit_request_id: UUID, user_id: UUID, data: schema.
 def get_votes(db: Session, edit_request_id: UUID):
     return db.query(model.EditRequestVote).filter(model.EditRequestVote.edit_request_id == edit_request_id).all()
 
-def get_pending_requests_by_post(db: Session, post_id: UUID):
+def get_pending_requests_by_campaign(db: Session, campaign_id: UUID):
     return db.query(model.EditRequest).filter(
-        model.EditRequest.post_id == post_id,
+        model.EditRequest.campaign_id == campaign_id,
         model.EditRequest.status == EditRequestStatus.pending
     ).options(joinedload(model.EditRequest.approvers)).all()

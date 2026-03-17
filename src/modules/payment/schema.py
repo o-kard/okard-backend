@@ -7,16 +7,16 @@ from src.modules.common.enums import PaymentMethod
 
 class PaymentBase(BaseModel):
     amount: int
-    post_id: UUID
+    campaign_id: UUID
     full_name: str
     email: str
     payment_method: PaymentMethod
 
 class PaymentCreate(PaymentBase):
-    post_id: UUID
+    campaign_id: UUID
 
 class PaymentUpdate(PaymentBase):
-    post_id: Optional[UUID] = None             
+    campaign_id: Optional[UUID] = None             
 
 class PaymentOut(PaymentBase):
     id: UUID

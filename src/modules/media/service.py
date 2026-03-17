@@ -1,4 +1,4 @@
-from http.client import HTTPException
+from fastapi import HTTPException, UploadFile
 import os
 from pathlib import Path
 from typing import List
@@ -11,16 +11,16 @@ from . import model, repo
 from fastapi import UploadFile
 from typing import Optional
 from src.modules.common.enums import ReferenceType
+from src.modules.common.minio_service import MinioService
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 
-UPLOAD_DIR = BASE_DIR / "uploads" / "media"
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+minio_service = MinioService()
 
 async def create_media_from_upload(
     db: Session, 
     file: UploadFile,
-    post_id: Optional[UUID] = None,
+    campaign_id: Optional[UUID] = None,
     clerk_id: Optional[str] = None,
 ):
     ref_id = None
@@ -29,38 +29,46 @@ async def create_media_from_upload(
     if clerk_id:
         user = await get_user_by_clerk_id(db, clerk_id)
         if not user:
-            raise HTTPException(404, "User not found")
+            raise HTTPException(status_code=404, detail="User not found")
         user_id = user.id
         print(f"User found: {user_id}")
         
         # Check existing media via handler
         if user.media:
-           old_path = user.media.path
-           if old_path:
-               abs_old_path = BASE_DIR / old_path.lstrip("/")
-               try:
-                   if abs_old_path.exists():
-                       abs_old_path.unlink()
-               except Exception:
-                   pass
-           repo.delete_media(db, user.media)
+            old_path = user.media.path
+            if old_path:
+                minio_service.delete_file(old_path)
+            repo.delete_media(db, user.media)
 
         ref_id = user.id
         ref_type = ReferenceType.user
             
-    elif post_id:
-        ref_id = post_id
-        ref_type = ReferenceType.post
+    elif campaign_id:
+        ref_id = campaign_id
+        ref_type = ReferenceType.campaign
     else:
-        raise ValueError("Either post_id or user_id is required")
+        raise ValueError("Either campaign_id or user_id is required")
     
     content = await file.read()
-    ext = os.path.splitext(file.filename)[1] or ".jpg"
-    file_name = f"{uuid4().hex}{ext}"
-    file_path = UPLOAD_DIR / file_name
+    
+    is_video = file.content_type and file.content_type.startswith("video/")
+    max_size = 50 * 1024 * 1024 if is_video else 5 * 1024 * 1024
+    limit_label = "50MB" if is_video else "5MB"
 
-    with open(file_path, "wb") as f:
-        f.write(content)
+    if len(content) > max_size:
+        raise HTTPException(status_code=400, detail=f"File {file.filename} exceeds {limit_label} limit")
+    
+    allowed_types = ["image/jpeg", "image/png", "image/gif", "image/webp", "video/mp4", "video/quicktime", "video/webm"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail=f"Unsupported file type for {file.filename}. Allowed: jpg, png, gif, webp, mp4, mov, webm")
+
+    # Upload to MinIO
+    await file.seek(0)
+    folder_path = f"{ref_type.value}/{ref_id}"
+    minio_url = minio_service.upload_file(file, folder=folder_path)
+    
+    if not minio_url:
+        raise HTTPException(status_code=500, detail="Failed to upload file to MinIO")
 
     media_id = uuid4()
     db_media = model.Media(
@@ -68,7 +76,7 @@ async def create_media_from_upload(
         orig_name=file.filename,
         media_type=file.content_type,
         file_size=len(content),
-        path=f"/uploads/media/{file_name}",
+        path=minio_url,
         display_order=0 
     )
     repo.create_media(db, db_media)
@@ -95,6 +103,8 @@ def get_media_or_404(db: Session, media_id: UUID):
 
 def delete_media(db: Session, media_id: UUID):
     db_media = get_media_or_404(db, media_id)
+    if db_media.path:
+        minio_service.delete_file(db_media.path)
     return repo.delete_media(db, db_media)
 
 async def _save_files_and_create_media(
@@ -116,32 +126,45 @@ async def _save_files_and_create_media(
 
     for i, file in enumerate(files, start=start_index):
         content = await file.read()
-        ext = os.path.splitext(file.filename)[1]
-        file_name = f"{uuid4().hex}{ext}"
-        file_path = UPLOAD_DIR / file_name
+        
+        is_video = file.content_type and file.content_type.startswith("video/")
+        max_size = 50 * 1024 * 1024 if is_video else 5 * 1024 * 1024
+        limit_label = "50MB" if is_video else "5MB"
 
-        with open(file_path, "wb") as f:
-            f.write(content)
+        if len(content) > max_size:
+            raise HTTPException(status_code=400, detail=f"File {file.filename} exceeds {limit_label} limit")
+        
+        allowed_types = ["image/jpeg", "image/png", "image/gif", "image/webp", "video/mp4", "video/quicktime", "video/webm"]
+        if file.content_type not in allowed_types:
+            raise HTTPException(status_code=400, detail=f"Unsupported file type for {file.filename}. Allowed: jpg, png, gif, webp, mp4, mov, webm")
 
         img_order = order_map.get(file.filename, i)
         media_id = uuid4()
+
+        # Upload to MinIO
+        await file.seek(0)
+        folder_path = f"{parent_type}/{parent_id}"
+        minio_url = minio_service.upload_file(file, folder=folder_path)
+        
+        if not minio_url:
+            raise HTTPException(status_code=500, detail=f"Failed to upload {file.filename} to MinIO")
 
         media_kwargs = dict(
             id=media_id,
             orig_name=file.filename,
             media_type=file.content_type or "application/octet-stream",
             file_size=len(content),
-            path=f"/uploads/media/{file_name}",
+            path=minio_url,
             display_order=img_order,  
         )
 
         ref_type = None
         if parent_type == "reward":
             ref_type = ReferenceType.reward
-        elif parent_type == "post":
-            ref_type = ReferenceType.post
         elif parent_type == "campaign":
             ref_type = ReferenceType.campaign
+        elif parent_type == "information":
+            ref_type = ReferenceType.information
         elif parent_type == "progress":
             ref_type = ReferenceType.progress
         elif parent_type == "report":

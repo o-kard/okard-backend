@@ -9,7 +9,7 @@ class Reward(Base):
     __tablename__ = "reward"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    post_id = Column(UUID(as_uuid=True), ForeignKey("post.id"),)
+    campaign_id = Column(UUID(as_uuid=True), ForeignKey("campaign.id"),)
     created_at = Column(
         DateTime(timezone=True),
         nullable=False,
@@ -21,7 +21,7 @@ class Reward(Base):
     reward_amount = Column(Integer,default=0)
     backup_amount = Column(Integer,default=0)
 
-    post = relationship("Post", back_populates="rewards")  
+    campaign = relationship("Campaign", back_populates="rewards")  
 
     media = relationship(
         "Media",

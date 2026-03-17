@@ -38,3 +38,6 @@ async def list_users(db: Session):
 
 async def get_user_by_id(db: Session, user_id: UUID):
     return repo.get_user_by_id(db, user_id)
+
+def delete_user(db: Session, user_id: UUID):
+    return repo.delete_user(db, user_id)

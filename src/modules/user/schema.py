@@ -1,5 +1,5 @@
 # modules/user/schema.py
-from pydantic import BaseModel, EmailStr, ConfigDict
+from pydantic import BaseModel, EmailStr, ConfigDict, Field
 from uuid import UUID
 from datetime import date
 from typing import Optional
@@ -51,8 +51,9 @@ class UserPublicResponse(BaseModel):
     surname: str | None = None
     user_description: str | None = None
     campaign_number: int | None = 0
-    contribution_number: int | None = 0
+    contribution_number: int | None = Field(default=0, validation_alias="total_backers")
     media: MediaOut | None = None
     
     class Config:
         from_attributes = True
+        populate_by_name = True

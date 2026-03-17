@@ -13,17 +13,14 @@ class PaymentMethod(str, enum.Enum):
     true_money_wallet = "true_money_wallet"
     pay_by_bank = "pay_by_bank"
 
-class PostState(str, enum.Enum):
+class CampaignState(str, enum.Enum):
     draft = "draft"
     published = "published"
-    archived = "archived"
+    fail = "fail"
+    success = "success"
+    suspend = "suspend"
 
-class PostStatus(str, enum.Enum):
-    active = "active"
-    inactive = "inactive"
-    suspended = "suspended"
-
-class PostCategory(str, enum.Enum):
+class CampaignCategory(str, enum.Enum):
     art = "art"
     comics = "comics"
     crafts = "crafts"
@@ -56,8 +53,8 @@ class ReportStatus(str, enum.Enum):
     dismissed = "dismissed"
 
 class ReferenceType(str, enum.Enum):
-    post = "post"
     campaign = "campaign"
+    information = "information"
     user = "user"
     progress = "progress"
     reward = "reward"

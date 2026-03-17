@@ -5,21 +5,21 @@ from typing import List
 
 from src.modules.bookmark import repo as bookmark_repo
 from src.modules.bookmark.model import Bookmark
-from src.modules.post import service as post_service
+from src.modules.campaign import service as campaign_service
 
-def toggle_bookmark(db: Session, user_id: UUID, post_id: UUID) -> dict:
-    # verify post exists
-    post = post_service.get_post(db, post_id)
-    if not post:
-        raise HTTPException(status_code=404, detail="Post not found")
+def toggle_bookmark(db: Session, user_id: UUID, campaign_id: UUID) -> dict:
+    # verify campaign exists
+    campaign = campaign_service.get_campaign(db, campaign_id)
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
 
-    existing = bookmark_repo.get_bookmark(db, user_id, post_id)
+    existing = bookmark_repo.get_bookmark(db, user_id, campaign_id)
     if existing:
-        bookmark_repo.delete_bookmark(db, user_id, post_id)
+        bookmark_repo.delete_bookmark(db, user_id, campaign_id)
         db.commit()
         return {"bookmarked": False}
     else:
-        bookmark_repo.create_bookmark(db, user_id, post_id)
+        bookmark_repo.create_bookmark(db, user_id, campaign_id)
         db.commit()
         return {"bookmarked": True}
 

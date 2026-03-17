@@ -1,9 +1,9 @@
 # src/modules/home/schema.py
 from pydantic import BaseModel
 from typing import List, Optional
-from src.modules.post.schema import PostSummaryOut
+from src.modules.campaign.schema import CampaignSummaryOut
 
-class HomePostOut(PostSummaryOut):
+class HomeCampaignOut(CampaignSummaryOut):
     pass
 
 class CategoryStat(BaseModel):

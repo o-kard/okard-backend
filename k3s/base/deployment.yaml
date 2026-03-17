@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: okard-backend
+  labels:
+    app: okard-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: okard-backend
+  template:
+    metadata:
+      labels:
+        app: okard-backend
+    spec:
+      initContainers:
+        - name: alembic-upgrade
+          image: okard-backend:latest
+          command: ["alembic", "upgrade", "head"]
+          envFrom:
+            - secretRef:
+                name: okard-backend-secrets
+      containers:
+        - name: okard-backend
+          image: okard-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - secretRef:
+                name: okard-backend-secrets
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "2Gi"

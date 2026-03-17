@@ -7,15 +7,15 @@ from sqlalchemy.orm import Session
 from src.database import db
 
 from .repo import (
-    get_recent_viewed_post_embeddings,
-    get_seen_post_ids,
-    get_candidate_post_embeddings,
-    get_fallback_popular_post_ids,
-    get_posts_by_ids,
+    get_recent_viewed_campaign_embeddings,
+    get_seen_campaign_ids,
+    get_candidate_campaign_embeddings,
+    get_fallback_popular_campaign_ids,
+    get_campaigns_by_ids,
     get_user_category_affinity,
 )
 
-# from src.modules.home.service import map_post_to_home
+# from src.modules.home.service import map_campaign_to_home
 
 
 def _normalize(vec: np.ndarray):
@@ -26,18 +26,18 @@ def _normalize(vec: np.ndarray):
 
 
 def _build_user_vector(db: Session, user_id, limit: int = 20):
-    rows = get_recent_viewed_post_embeddings(db, user_id, limit)
+    rows = get_recent_viewed_campaign_embeddings(db, user_id, limit)
 
     if not rows:
         return None
 
-    seen_posts = set()
+    seen_campaigns = set()
     vecs = []
 
     for pid, emb in rows:
-        if pid in seen_posts:
+        if pid in seen_campaigns:
             continue
-        seen_posts.add(pid)
+        seen_campaigns.add(pid)
 
         try:
             v = np.array(json.loads(emb), dtype=np.float32)
@@ -61,23 +61,23 @@ def _build_user_vector(db: Session, user_id, limit: int = 20):
 
     return _normalize(user_vec)
 
-def popularity_score(post):
-    return np.log1p(post.supporter) / np.log1p(2) #จำนวน supporter max score
+def popularity_score(campaign):
+    return np.log1p(campaign.supporter) / np.log1p(2) #จำนวน supporter max score
 
-def freshness_boost(post, half_life_days: int = 14) -> float:
-    age_days = (datetime.now(timezone.utc) - post.created_at).days
+def freshness_boost(campaign, half_life_days: int = 14) -> float:
+    age_days = (datetime.now(timezone.utc) - campaign.created_at).days
     return np.exp(-age_days / half_life_days)
 
 def diversity_penalty(
-    post,
-    recent_posts,
+    campaign,
+    recent_campaigns,
     penalty: float = 0.15
 ) -> float:
-    if not recent_posts:
+    if not recent_campaigns:
         return 0.0
 
-    recent_categories = [p.category for p in recent_posts]
-    if post.category in recent_categories:
+    recent_categories = [p.category for p in recent_campaigns]
+    if campaign.category in recent_categories:
         return penalty
 
     return 0.0
@@ -104,21 +104,21 @@ def for_you(db: Session, user_id, limit: int = 10):
     user_vec = _build_user_vector(db, user_id)
 
     if user_vec is None:
-        post_ids = get_fallback_popular_post_ids(db, limit)
-        posts = get_posts_by_ids(db, post_ids)
+        campaign_ids = get_fallback_popular_campaign_ids(db, limit)
+        campaigns = get_campaigns_by_ids(db, campaign_ids)
 
         return [
             {"campaign": p, "score": 0.0}
-            for p in posts
+            for p in campaigns
         ]
 
-    seen_ids = get_seen_post_ids(db, user_id)
-    candidates = get_candidate_post_embeddings(db, user_id)
+    seen_ids = get_seen_campaign_ids(db, user_id)
+    candidates = get_candidate_campaign_embeddings(db, user_id)
     affinity = get_user_category_affinity(db, user_id)
 
     candidate_ids = [pid for pid, _ in candidates]
-    posts = get_posts_by_ids(db, candidate_ids)
-    post_map = {p.id: p for p in posts}
+    campaigns = get_campaigns_by_ids(db, candidate_ids)
+    campaign_map = {p.id: p for p in campaigns}
 
     scored = []
 
@@ -126,8 +126,8 @@ def for_you(db: Session, user_id, limit: int = 10):
         if pid in seen_ids:
             continue
 
-        post = post_map.get(pid)
-        if not post:
+        campaign = campaign_map.get(pid)
+        if not campaign:
             continue
 
         try:
@@ -137,9 +137,9 @@ def for_you(db: Session, user_id, limit: int = 10):
                 continue
 
             semantic = float(np.dot(vec, user_vec))
-            cat_score = affinity.get(post.category, 0.0)
-            pop_score = popularity_score(post)
-            fresh_score = freshness_boost(post)
+            cat_score = affinity.get(campaign.category, 0.0)
+            pop_score = popularity_score(campaign)
+            fresh_score = freshness_boost(campaign)
 
             score = (
                 0.55 * semantic +
@@ -160,22 +160,22 @@ def for_you(db: Session, user_id, limit: int = 10):
 
     final = []
     used_ids = set()
-    recent_posts = []
+    recent_campaigns = []
 
     for pid, score in scored:
         if pid in used_ids:
             continue
 
-        post = post_map.get(pid)
-        if not post:
+        campaign = campaign_map.get(pid)
+        if not campaign:
             continue
 
-        penalty = diversity_penalty(post, recent_posts)
+        penalty = diversity_penalty(campaign, recent_campaigns)
         final_score = score - penalty
 
         final.append((pid, final_score))
         used_ids.add(pid)
-        recent_posts.append(post)
+        recent_campaigns.append(campaign)
 
         if len(final) >= limit * 2:
             break
@@ -195,7 +195,7 @@ def for_you(db: Session, user_id, limit: int = 10):
 
     return [
         {
-            "campaign": post_map[pid],
+            "campaign": campaign_map[pid],
             "score": score,
         }
         for pid, score in mixed_results

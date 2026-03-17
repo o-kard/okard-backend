@@ -21,8 +21,8 @@ def get_payment(payment_id: UUID, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail=str(e))
 
 @router.post("", response_model=schema.PaymentOut, status_code=201)
-def create_payment(payload: schema.PaymentCreate, clerk_id: str = Query(...), db: Session = Depends(get_db)):
-    return service.create_payment(db,clerk_id, payload)
+async def create_payment(payload: schema.PaymentCreate, clerk_id: str = Query(...), db: Session = Depends(get_db)):
+    return await service.create_payment(db,clerk_id, payload)
 
 @router.delete("/{payment_id}")
 def delete_payment(payment_id: UUID, db: Session = Depends(get_db)):

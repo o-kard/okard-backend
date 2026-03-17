@@ -9,12 +9,12 @@ class CommentBase(BaseModel):
     content: str
 
 class CommentCreate(CommentBase):
-    post_id: UUID
+    campaign_id: UUID
     parent_id: Optional[UUID] = None
 
 class CommentOut(CommentBase):
     id: UUID
-    post_id: UUID
+    campaign_id: UUID
     parent_id: Optional[UUID]
     user_id: UUID
     likes: int

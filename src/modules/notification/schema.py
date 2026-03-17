@@ -6,7 +6,7 @@ from typing import Optional
 from src.modules.common.enums import NotificationType
 
 class NotificationBase(BaseModel):
-    post_id: Optional[UUID] = None
+    campaign_id: Optional[UUID] = None
     user_id: UUID
     actor_id: Optional[UUID] = None
     notification_title: str 

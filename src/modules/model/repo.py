@@ -2,9 +2,9 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 from . import model
 
-def save_prediction_results(db: Session, post_id: UUID, results: dict):
+def save_prediction_results(db: Session, campaign_id: UUID, results: dict):
     db_predict = model.Model(
-        post_id=post_id,
+        campaign_id=campaign_id,
         success_label=results.get('success_cls', {}).get('label', 'Unknown'),
         risk_label=results.get('risk_level', {}).get('label', 'Unknown'),
         days_to_state_label=results.get('days_to_state_change', {}).get('label', 'Unknown'),

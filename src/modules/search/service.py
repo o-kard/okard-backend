@@ -21,7 +21,7 @@ class SearchService:
     def search(db: Session, query: str, request: Request) -> SearchResponse:
 
         # users = SearchRepository.search_users(db, query)
-        posts = SearchRepository.search_posts(db, query)
+        campaigns = SearchRepository.search_campaigns(db, query)
 
         results = []
 
@@ -44,15 +44,16 @@ class SearchService:
         #         thumbnail=thumbnail,
         #         creator=None
         #     ))
-
         # -----------------------
-        # POST SEARCH
+        # CAMPAIGN SEARCH
         # -----------------------
-        for p in posts:
+        for p in campaigns:
 
             thumbnail = None
             if p.media and len(p.media) > 0:
-                thumbnail = SearchService.build_image_url(request, p.media[0].path)
+                img_media = next((m for m in p.media if m.path and any(ext in m.path.lower() for ext in ['.jpg', '.jpeg', '.png', '.webp', '.gif'])), None)
+                selected_media = img_media if img_media else p.media[0]
+                thumbnail = SearchService.build_image_url(request, selected_media.path)
 
             user = db.query(User).filter(User.id == p.user_id).first()
             creator_name = None
@@ -64,8 +65,8 @@ class SearchService:
 
             results.append(SearchResult(
                 id=p.id,
-                type="post",
-                name=p.post_header,
+                type="campaign",
+                name=p.campaign_header,
                 thumbnail=thumbnail,
                 creator=creator_name
             ))

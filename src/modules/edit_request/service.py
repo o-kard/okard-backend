@@ -6,28 +6,29 @@ from fastapi import HTTPException
 from datetime import timezone
 from . import repo, schema, model
 from src.modules.notification import service as notification_service, schema as notification_schema
-from src.modules.common.enums import NotificationType, EditRequestStatus, VoteDecision, PostState
-from src.modules.post import service as post_service, schema as post_schema, repo as post_repo, model as post_model
+from src.modules.common.enums import NotificationType, EditRequestStatus, VoteDecision, CampaignState
+from src.modules.campaign import service as campaign_service, schema as campaign_schema, repo as campaign_repo, model as campaign_model
 from src.modules.reward import repo as reward_repo, schema as reward_schema
 from src.modules.media import repo as media_repo
 
-def _generate_display_changes(post: post_model.Post, proposed_changes: dict) -> str:
+
+def _generate_display_changes(campaign: campaign_model.Campaign, proposed_changes: dict) -> str:
     lines = []
     
-    # 1. Post Fields
+    # 1. Campaign Fields
     if "goal_amount" in proposed_changes:
-        lines.append(f"Goal Amount: {post.goal_amount} -> {proposed_changes['goal_amount']}")
+        lines.append(f"Goal Amount: {campaign.goal_amount} -> {proposed_changes['goal_amount']}")
     if "status" in proposed_changes:
-        lines.append(f"Status: {post.status} -> {proposed_changes['status']}")
+        lines.append(f"Status: {campaign.status} -> {proposed_changes['status']}")
     if "effective_end_date" in proposed_changes:
-        lines.append(f"End Date: {post.effective_end_date} -> {proposed_changes['effective_end_date']}")
+        lines.append(f"End Date: {campaign.effective_end_date} -> {proposed_changes['effective_end_date']}")
     
     # 2. Rewards
     if "rewards_payload" in proposed_changes:
         rewards_payload = proposed_changes["rewards_payload"]
         if isinstance(rewards_payload, list):
             # Map existing rewards
-            current_rewards = {str(r.id): r for r in post.rewards}
+            current_rewards = {str(r.id): r for r in campaign.rewards}
             
             for item in rewards_payload:
                 # Check if New or Existing
@@ -65,12 +66,12 @@ def _generate_display_changes(post: post_model.Post, proposed_changes: dict) -> 
     return "\n".join(lines)
 
 def create_request(db: Session, requester_id: UUID, data: schema.EditRequestCreate):
-    # Verify Post exists
-    post = post_service.get_post(db, data.post_id)
+    # Verify Campaign exists
+    campaign = campaign_service.get_campaign(db, data.campaign_id)
 
     # Generate display_changes
     if data.proposed_changes:
-        data.display_changes = _generate_display_changes(post, data.proposed_changes)
+        data.display_changes = _generate_display_changes(campaign, data.proposed_changes)
 
     # Default Expiration logic: 3 days if not provided
     if not data.expires_at:
@@ -79,7 +80,7 @@ def create_request(db: Session, requester_id: UUID, data: schema.EditRequestCrea
         data.expires_at = datetime.now(timezone.utc) + timedelta(days=3)
     
     # Identify Top 11 Contributors
-    contributors = repo.get_top_contributors(db, data.post_id, limit=11)
+    contributors = repo.get_top_contributors(db, data.campaign_id, limit=11)
     
     # Create Request
     edit_req = repo.create_edit_request(db, requester_id, data)
@@ -92,66 +93,15 @@ def create_request(db: Session, requester_id: UUID, data: schema.EditRequestCrea
         notif_payload = notification_schema.NotificationCreate(
             user_id=approver.user_id,
             actor_id=requester_id,
-            post_id=data.post_id,
+            campaign_id=data.campaign_id,
             notification_title="New Edit Request",
-            notification_message=f"A request to edit post '{post.post_header}' needs your vote.",
+            notification_message=f"A request to edit campaign '{campaign.campaign_header}' needs your vote.",
             type=NotificationType.system_alert 
         )
         notification_service.create_notification(db, notif_payload)
         
     return edit_req
-
-    if approve_count > threshold:
-        req.status = EditRequestStatus.approved
-        req.resolved_at = datetime.now()
-        
-        if req.proposed_changes:
-            try:
-                changes = dict(req.proposed_changes)
-                rewards_payload = changes.pop("rewards_payload", None)
-                
-                if rewards_payload and isinstance(rewards_payload, list):
-                    from src.modules.reward import repo as reward_repo, schema as reward_schema
-                    for item in rewards_payload:
-                        data_dict = {k: v for k, v in item.items() if k not in ["isEdited", "id"]}
-                        
-                        if item.get("id"):
-                            # Update Existing
-                            rid = UUID(str(item["id"]))
-                            update_schema = reward_schema.RewardUpdate(**data_dict)
-                            curr_reward = reward_repo.get_reward(db, rid)
-                            if curr_reward:
-                                reward_repo.update_reward(db, curr_reward, update_schema)
-                        else:
-                            # Create New
-                            data_dict["post_id"] = req.post_id
-                            create_schema = reward_schema.RewardCreate(**data_dict)
-                            reward_repo.create_reward(db, create_schema)
-                
-                # 2. Update Post Columns
-                if changes:
-                    valid_keys = post_schema.PostUpdate.model_fields.keys()
-                    post_changes = {k: v for k, v in changes.items() if k in valid_keys}
-                    
-                    if post_changes:
-                        update_data = post_schema.PostUpdate(**post_changes)
-                        post = post_repo.get_post(db, req.post_id)
-                        post_repo.update_post(db, post, update_data)
-                    
-            except Exception as e:
-                import traceback
-                traceback.print_exc()
-                raise e
-            
-    elif reject_count >= (total_approvers - threshold):
-        req.status = EditRequestStatus.rejected
-        req.resolved_at = datetime.now()
     
-    db.commit()
-    db.refresh(req)
-    
-    return vote
-
 async def cast_vote(db: Session, edit_request_id: UUID, user_id: UUID, data: schema.VoteCreate):
     # Get Request with locking to prevent race conditions
     req = db.query(model.EditRequest).filter(model.EditRequest.id == edit_request_id).with_for_update().first()
@@ -199,7 +149,7 @@ async def cast_vote(db: Session, edit_request_id: UUID, user_id: UUID, data: sch
                 if rewards_payload is not None and isinstance(rewards_payload, list):
                     # FULL SYNC LOGIC
                     # 1. Fetch current rewards
-                    current_rewards = reward_repo.list_by_post(db, req.post_id)
+                    current_rewards = reward_repo.list_by_campaign(db, req.campaign_id)
                     current_reward_map = {str(r.id): r for r in current_rewards}
                     
                     # 2. Identify incoming IDs
@@ -242,7 +192,7 @@ async def cast_vote(db: Session, edit_request_id: UUID, user_id: UUID, data: sch
                                 reward_repo.update_reward(db, curr_reward, update_schema)
                         else:
                             # Create New
-                            data_dict["post_id"] = req.post_id
+                            data_dict["campaign_id"] = req.campaign_id
                             # Ensure backup_amount is set to 0 strictly for new items
                             data_dict["backup_amount"] = 0
                             create_schema = reward_schema.RewardCreate(**data_dict)
@@ -269,15 +219,18 @@ async def cast_vote(db: Session, edit_request_id: UUID, user_id: UUID, data: sch
                             except Exception as e:
                                 print(f"Failed to link media {media_id_str} to reward {target_reward_id}: {e}")
 
-                # 2. Update Post Columns
+                # 2. Update Campaign Columns
                 if changes:
-                    valid_keys = post_schema.PostUpdate.model_fields.keys()
-                    post_changes = {k: v for k, v in changes.items() if k in valid_keys}
+                    valid_keys = campaign_schema.CampaignUpdate.model_fields.keys()
+                    campaign_changes = {k: v for k, v in changes.items() if k in valid_keys}
                     
-                    if post_changes:
-                        update_data = post_schema.PostUpdate(**post_changes)
-                        post = post_repo.get_post(db, req.post_id)
-                        post_repo.update_post(db, post, update_data)
+                    if campaign_changes:
+                        update_data = campaign_schema.CampaignUpdate(**campaign_changes)
+                        campaign = campaign_repo.get_campaign(db, req.campaign_id)
+                        campaign_repo.update_campaign(db, campaign, update_data)
+                        
+                # 3. Update Prediction
+                await campaign_service.update_prediction_for_campaign(db, req.campaign_id)
                     
             except Exception as e:
                 import traceback
@@ -287,11 +240,25 @@ async def cast_vote(db: Session, edit_request_id: UUID, user_id: UUID, data: sch
     elif reject_count >= (total_approvers - threshold):
         req.status = EditRequestStatus.rejected
         req.resolved_at = datetime.now()
+        
+    if req.status in [EditRequestStatus.approved, EditRequestStatus.rejected]:
+        db_campaign = campaign_repo.get_campaign(db, req.campaign_id)
+        if db_campaign:
+            status_text = "Approved" if req.status == EditRequestStatus.approved else "Rejected"
+            notif = notification_schema.NotificationCreate(
+                user_id=db_campaign.user_id,
+                actor_id=user_id,
+                campaign_id=req.campaign_id,
+                notification_title=f"Edit Request {status_text}",
+                notification_message=f"Your edit request for '{db_campaign.campaign_header}' has been {status_text.lower()} by supporters.",
+                type=NotificationType.system_alert
+            )
+            notification_service.create_notification(db, notif)
     
     db.commit()
     db.refresh(req)
     
     return vote
 
-def get_pending_requests(db: Session, post_id: UUID):
-    return repo.get_pending_requests_by_post(db, post_id)
+def get_pending_requests(db: Session, campaign_id: UUID):
+    return repo.get_pending_requests_by_campaign(db, campaign_id)

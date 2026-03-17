@@ -27,7 +27,7 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
-    posts = relationship("Post", back_populates="user")
+    campaigns = relationship("Campaign", back_populates="user")
 
     media = relationship(
         "Media",
@@ -41,3 +41,17 @@ class User(Base):
     comments = relationship("Comment", back_populates="author", cascade="all, delete-orphan")
     creator = relationship("Creator", back_populates="user", uselist=False, foreign_keys="Creator.user_id")
     bookmarks = relationship("Bookmark", back_populates="user", cascade="all, delete-orphan")
+
+    @property
+    def campaign_number(self):
+        return len(self.campaigns) if self.campaigns else 0
+
+    @property
+    def total_backers(self):
+        if not self.campaigns:
+            return 0
+        return sum(campaign.supporter for campaign in self.campaigns if campaign.supporter)
+
+    @property
+    def user_description(self):
+        return self.creator.bio if self.creator and hasattr(self.creator, "bio") else None

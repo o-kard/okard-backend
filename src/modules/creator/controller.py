@@ -11,7 +11,7 @@ from src.modules.user import schema as userSchema
 from src.modules.user import service as userService
 from src.modules.media import service as mediaService
 from src.modules.creator_verification_doc import service as verificationDocService
-from src.modules.common.enums import UserRole, VerificationDocType
+from src.modules.common.enums import UserRole, VerificationDocType, VerificationStatus
 
 router = APIRouter(prefix="/creator", tags=["Creator"])
 
@@ -58,13 +58,13 @@ async def create_creator(
         
         # Step 2: Handle image upload/deletion
         if image:
-            await imageService.create_image_from_upload(
+            await mediaService.create_media_from_upload(
                 db, 
                 file=image,
                 clerk_id=user_res.clerk_id
             )
         elif remove_image and user_res.image:
-            await imageService.delete_image(db, user_res.image.id)
+            await mediaService.delete_media(db, user_res.image.id)
         
         # Step 3: Create creator profile
         creator_res = await service.create_creator(db, creator_obj, clerk_id)
@@ -141,8 +141,43 @@ async def update_creator(
 ):
     """Update creator profile"""
     try:
-        return service.update_creator(db, creator_id, creator_data, clerk_id)
+        return await service.update_creator(db, creator_id, creator_data, clerk_id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except PermissionError as e:
         raise HTTPException(status_code=403, detail=str(e))
+
+@router.get("/requests/pending", response_model=list[schema.CreatorOut])
+async def get_pending_requests(
+    db: Session = Depends(get_db),
+):
+    """Get all pending creator requests"""
+    # Note: In a real app, add admin role check here
+    return service.get_pending_creators(db)
+
+@router.put("/{creator_id}/verify", response_model=schema.CreatorOut)
+async def verify_creator(
+    creator_id: UUID,
+    status: str = Query(..., description="verified, rejected, or pending"),
+    rejection_reason: Optional[str] = Query(None),
+    admin_clerk_id: str = Query(...),
+    db: Session = Depends(get_db),
+):
+    """Approve, reject, or revoke a creator's verification status"""
+    creator = await service.verify_creator_request(
+        db=db, 
+        creator_id=creator_id, 
+        status=status, 
+        admin_clerk_id=admin_clerk_id, 
+        rejection_reason=rejection_reason
+    )
+    
+    user = await userService.get_user_by_id(db, creator.user_id)
+    if user:
+        if status == VerificationStatus.verified.value:
+            user.role = UserRole.creator
+        elif status in [VerificationStatus.rejected.value, VerificationStatus.pending.value]:
+            user.role = UserRole.user
+        db.commit()
+            
+    return creator

@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: okard-backend-uat
+  namespace: argocd
+  annotations:
+    argocd-image-updater.argoproj.io/image-list: backend=ghcr.io/o-kard/okard-backend
+    argocd-image-updater.argoproj.io/backend.update-strategy: latest
+    argocd-image-updater.argoproj.io/write-back-method: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/o-kard/okard-backend.git'
+    targetRevision: dev
+    path: k3s/overlays/uat
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: uat
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
