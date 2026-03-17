@@ -8,7 +8,7 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
   CACHE_TYPE: registry
-  CACHE_REF: ghcr.io/o-kard/okard-backend:buildcache
+  CACHE_REF: ghcr.io/o-kard/okard-backend:buildcache-prd
 
 jobs:
   build-and-push:
