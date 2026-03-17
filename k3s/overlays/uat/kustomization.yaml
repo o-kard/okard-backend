@@ -14,4 +14,4 @@ patches:
 images:
   - name: okard-backend
     newName: ghcr.io/o-kard/okard-backend
-    newTag: latest
+    newTag: uat-latest
