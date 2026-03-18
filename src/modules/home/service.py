@@ -1,4 +1,4 @@
-from .repo import get_top_pledged_posts
+from .repo import get_top_pledged_campaigns
 from .repo import get_category_stats
 from .schema import CategoryStat
 from sqlalchemy.orm import Session
@@ -9,7 +9,7 @@ def get_top_pledged_campaigns(
     limit: int = 10,
     category: str | None = None,
 ):
-    campaigns = get_top_pledged_posts(
+    campaigns = get_top_pledged_campaigns(
         db=db,
         limit=limit,
         category=category,
