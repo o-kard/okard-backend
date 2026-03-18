@@ -23,7 +23,7 @@ spec:
                 name: okard-backend-secrets
       containers:
         - name: okard-backend
-          image: okard-backend:latest
+          image: ghcr.io/o-kard/okard-backend:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
