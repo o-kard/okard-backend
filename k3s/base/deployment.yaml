@@ -16,14 +16,14 @@ spec:
     spec:
       initContainers:
         - name: alembic-upgrade
-          image: okard-backend:latest
+          image: ghcr.io/o-kard/okard-backend:latest
           command: ["alembic", "upgrade", "head"]
           envFrom:
             - secretRef:
                 name: okard-backend-secrets
       containers:
         - name: okard-backend
-          image: okard-backend:latest
+          image: ghcr.io/o-kard/okard-backend:latest
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000

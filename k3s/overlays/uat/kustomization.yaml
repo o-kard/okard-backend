@@ -10,8 +10,3 @@ namespace: uat
 
 patches:
   - path: deployment-patch.yaml
-  
-images:
-  - name: okard-backend
-    newName: ghcr.io/o-kard/okard-backend
-    newTag: uat-latest

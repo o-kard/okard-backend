@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session, selectinload
 from src.modules.campaign.model import Campaign
 from sqlalchemy import func, case
 
-def get_top_pledged_posts(
+def get_top_pledged_campaigns(
     db: Session,
     limit: int,
     category: str | None = None,
