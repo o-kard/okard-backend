@@ -142,7 +142,11 @@ async def create(
     )
     
     if background_tasks:
+        print("Background tasks enabled")
+        print('campaign id: ', campaign.id)
+        print('generate campaign embedding')
         background_tasks.add_task(generate_campaign_embedding, campaign.id)
+        print('generate campaign embedding done')
 
     return campaign
     
@@ -225,7 +229,11 @@ async def update(
         campaign_media_reorder=reorder_list, 
     )
     if background_tasks and campaign_data:
-        background_tasks.add_task(generate_campaign_embedding, campaign_id)
+        print("Background tasks enabled")
+        print('campaign id: ', campaign.id)
+        print('generate campaign embedding')
+        background_tasks.add_task(generate_campaign_embedding, campaign.id)
+        print('generate campaign embedding done')
 
     return campaign
     
