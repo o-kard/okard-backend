@@ -4,10 +4,10 @@ metadata:
   name: okard-backend-prd
   namespace: argocd
   annotations:
-    argocd-image-updater.argoproj.io/image-list: backend=ghcr.io/o-kard/okard-backend
-    argocd-image-updater.argoproj.io/backend.update-strategy: latest
+    argocd-image-updater.argoproj.io/image-list: okard-backend=ghcr.io/o-kard/okard-backend
+    argocd-image-updater.argoproj.io/okard-backend.update-strategy: latest
+    argocd-image-updater.argoproj.io/okard-backend.allow-tags: regexp:^prd-.*$
     argocd-image-updater.argoproj.io/write-back-method: argocd
-    argocd-image-updater.argoproj.io/backend.allow-tags: regexp:^prd-.*$
 spec:
   project: default
   source:
