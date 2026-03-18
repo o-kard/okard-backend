@@ -16,7 +16,7 @@ spec:
     spec:
       initContainers:
         - name: alembic-upgrade
-          image: okard-backend:latest
+          image: ghcr.io/o-kard/okard-backend:latest
           command: ["alembic", "upgrade", "head"]
           envFrom:
             - secretRef:
