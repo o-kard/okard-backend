@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from typing import Optional
 
 from src.database.db import get_db
-from .service import get_top_pledged_campaigns
+from .service import get_top_pledged_campaigns_service
 
 from .schema import CategoryStat
 from .service import get_category_stats_service
@@ -23,7 +23,7 @@ def get_top_pledged_campaigns_controller(
     category: Optional[str] = None,
     db: Session = Depends(get_db),
 ):
-    return get_top_pledged_campaigns(
+    return get_top_pledged_campaigns_service(
         db=db,
         limit=limit,
         category=category,

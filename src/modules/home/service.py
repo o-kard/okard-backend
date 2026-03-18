@@ -4,7 +4,7 @@ from .schema import CategoryStat
 from sqlalchemy.orm import Session
 # from .mapper import map_post_to_home
 
-def get_top_pledged_campaigns(
+def get_top_pledged_campaigns_service(
     db,
     limit: int = 10,
     category: str | None = None,
