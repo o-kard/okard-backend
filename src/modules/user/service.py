@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from . import repo, schema
 from src.modules.creator import repo as creator_repo
 from src.modules.creator.schema import CreatorUpdate
+from src.modules.common.enums import CampaignState
 from uuid import UUID
 
 async def create_user_from_clerk(
@@ -45,5 +46,8 @@ def delete_user(db: Session, user_id: UUID):
 async def suspend_user(db: Session, user_id: UUID):
     user = await get_user_by_id(db, user_id)
     if user:
+        # Suspend all user's campaigns
+        for campaign in user.campaigns:
+            campaign.state = CampaignState.suspend
         return repo.suspend_user(db, user)
     return None
