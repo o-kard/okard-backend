@@ -80,6 +80,11 @@ class CampaignSummaryOut(BaseModel):
     current_amount: int
     supporter: int
 
+    @computed_field
+    @property
+    def supporters(self) -> int:
+        return self.supporter
+
     media: List[MediaOut]
     user: UserPublicResponse
     state: Optional[CampaignState]

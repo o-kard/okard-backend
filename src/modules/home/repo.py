@@ -2,6 +2,8 @@
 from sqlalchemy.orm import Session, selectinload
 from src.modules.campaign.model import Campaign
 from sqlalchemy import func, case
+from sqlalchemy import or_, and_
+from datetime import datetime, timezone
 
 def get_top_pledged_campaigns(
     db: Session,
@@ -18,6 +20,17 @@ def get_top_pledged_campaigns(
 
     if category:
         query = query.filter(Campaign.category == category)
+
+    now = datetime.now(timezone.utc)
+    query = query.filter(
+        or_(
+            Campaign.state == "published",
+            and_(
+                Campaign.state == "success",
+                Campaign.effective_end_date > now
+            )
+        )
+    )
 
     return (
         query
