@@ -18,6 +18,16 @@ def create_creator(db: Session, creator_data: CreatorCreate, user_id: uuid.UUID)
     db.refresh(creator)
     return creator
 
+def update_creator_on_resubmit(db: Session, existing_creator: Creator, creator_data: CreatorCreate) -> Creator:
+    existing_creator.bio = creator_data.bio
+    existing_creator.social_links = creator_data.social_links
+    existing_creator.verification_submitted_at = datetime.now(timezone.utc)
+    existing_creator.verification_status = VerificationStatus.pending
+    
+    db.commit()
+    db.refresh(existing_creator)
+    return existing_creator
+
 def get_creator_by_id(db: Session, creator_id: uuid.UUID) -> Creator:
     return (
         db.query(Creator)

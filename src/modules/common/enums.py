@@ -91,6 +91,7 @@ class StorageProvider(str, enum.Enum):
     local = "local"
     s3 = "s3"
     gcs = "gcs"
+    minio = "minio"
 
 class VerificationDocType(str, enum.Enum):
     id_card = "id_card"
