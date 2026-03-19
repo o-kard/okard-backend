@@ -42,7 +42,9 @@ async def verify_campaign_owner(db: Session, campaign_id: UUID, clerk_id: str) -
     campaign = repo.get_campaign(db, campaign_id)
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
-    if not user or campaign.user_id != user.id:
+    
+    # Allow if user is owner OR if user is admin
+    if not user or (campaign.user_id != user.id and user.role != UserRole.admin):
         raise HTTPException(status_code=403, detail="Permission denied")
     return campaign
 

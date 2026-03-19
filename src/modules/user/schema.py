@@ -35,6 +35,7 @@ class UserResponse(UserBase):
     country: CountryOut | None = None
     role: str | None = None
     creator: CreatorResponse | None = None
+    status: str | None = None
     
     class Config:
         from_attributes = True
