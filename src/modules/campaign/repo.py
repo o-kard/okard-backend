@@ -24,7 +24,10 @@ def list_campaigns(
     sort: str | None = None,
     state: str | None = "published",
     owner_id: UUID | None = None,
-    current_user_id: UUID | None = None
+    current_user_id: UUID | None = None,
+    limit: int | None = None,
+    offset: int | None = None,
+    include_closed: bool = True
 ):
     query = db.query(model.Campaign).options(
         joinedload(Campaign.user).joinedload(user_model.User.media),
@@ -56,6 +59,10 @@ def list_campaigns(
             )
         )
 
+    if not include_closed:
+        now = datetime.now(timezone.utc)
+        query = query.filter(model.Campaign.effective_end_date > now)
+
     if sort == "newest":
         query = query.order_by(desc(model.Campaign.created_at))
     elif sort == "ending_soon":
@@ -65,8 +72,10 @@ def list_campaigns(
         query = query.order_by(desc(model.Campaign.supporter))
     elif sort == "updated":
          query = query.order_by(desc(model.Campaign.updated_at))
-    else:
-        query = query.order_by(desc(model.Campaign.created_at))
+    if offset is not None:
+        query = query.offset(offset)
+    if limit is not None:
+        query = query.limit(limit)
 
     campaigns = query.all()
     
