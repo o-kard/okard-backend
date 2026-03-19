@@ -16,6 +16,7 @@ from pathlib import Path
 from src.modules.user.service import get_user_by_clerk_id
 from src.modules.common.enums import CampaignState
 from src.modules.user.repo import get_user_by_id
+from src.modules.common.enums import UserRole
 import os
 import uuid
 
