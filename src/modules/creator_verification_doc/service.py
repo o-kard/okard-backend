@@ -31,7 +31,7 @@ async def create_verification_doc_from_upload(
         creator_id=creator_id,
         type=doc_type,
         file_path=str(file_path.relative_to(BASE_DIR)), # Store relative path
-        storage_provider=StorageProvider.local,
+        storage_provider=StorageProvider.minio,
         mime_type=file.content_type,
         file_size=len(content)
     )
