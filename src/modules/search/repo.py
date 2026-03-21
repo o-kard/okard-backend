@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from src.modules.user.model import User
 from src.modules.campaign.model import Campaign
+from src.modules.common.enums import CampaignState
 
 class SearchRepository:
 
@@ -22,8 +23,10 @@ class SearchRepository:
         return (
             db.query(Campaign)
             .filter(
-                (Campaign.campaign_header.ilike(f"%{query}%")) |
-                (Campaign.campaign_description.ilike(f"%{query}%"))
+                (Campaign.state != CampaignState.draft) &
+                (Campaign.state != CampaignState.suspend) &
+                ((Campaign.campaign_header.ilike(f"%{query}%")) |
+                 (Campaign.campaign_description.ilike(f"%{query}%")))
             )
             .limit(10)
             .all()

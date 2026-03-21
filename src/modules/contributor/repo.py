@@ -40,3 +40,6 @@ def delete_contributor(db: Session, contributor_id: UUID):
 
 def get_by_user_id(db: Session, user_id: UUID):
     return db.query(model.Contributor).filter(model.Contributor.user_id == user_id).all()
+
+def list_contributors_by_campaign(db: Session, campaign_id: UUID):
+    return db.query(model.Contributor).filter(model.Contributor.campaign_id == campaign_id).all()

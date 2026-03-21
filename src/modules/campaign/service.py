@@ -80,7 +80,7 @@ def get_campaign(db: Session, campaign_id: UUID, user_id: UUID | None = None):
     return campaign
 
 def get_campaigns_by_user_id(db: Session, user_id: UUID):
-    return repo.list_campaigns(db, owner_id=user_id)
+    return repo.list_campaigns(db, owner_id=user_id, state="all")
 
 def update_campaign(db: Session, campaign_id: UUID, campaign_data: schema.CampaignUpdate):
     db_campaign = get_campaign(db, campaign_id)

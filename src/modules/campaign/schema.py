@@ -80,6 +80,9 @@ class CampaignSummaryOut(BaseModel):
     current_amount: int
     supporter: int
 
+    effective_start_from: Optional[datetime] = None
+    effective_end_date: Optional[datetime] = None
+
     @computed_field
     @property
     def supporters(self) -> int:
