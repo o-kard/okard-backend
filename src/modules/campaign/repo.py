@@ -7,7 +7,7 @@ from src.modules.reward import model as reward_model
 from src.modules.user import model as user_model
 
 from .model import Campaign
-
+from src.modules.bookmark.repo import hydrate_campaign_bookmarks
 from sqlalchemy import or_, desc, asc, select, exists
 from datetime import datetime, timezone
 from src.modules.bookmark.model import Bookmark
@@ -79,16 +79,7 @@ def list_campaigns(
 
     campaigns = query.all()
     
-    # Optional: Attach is_bookmarked if current_user_id is provided
-    if current_user_id and campaigns:
-        campaign_ids = [p.id for p in campaigns]
-        bookmarked_ids = db.execute(
-            select(Bookmark.campaign_id)
-            .where(Bookmark.user_id == current_user_id, Bookmark.campaign_id.in_(campaign_ids))
-        ).scalars().all()
-        bookmarked_set = set(bookmarked_ids)
-        for p in campaigns:
-            p.is_bookmarked = p.id in bookmarked_set
+    hydrate_campaign_bookmarks(db, campaigns, current_user_id)
 
     return campaigns
 
@@ -109,10 +100,7 @@ def get_campaign(db: Session, campaign_id, user_id: UUID | None = None):
     )
     
     if campaign and user_id:
-        is_bookmarked = db.execute(
-            select(exists().where(Bookmark.user_id == user_id, Bookmark.campaign_id == campaign_id))
-        ).scalar()
-        campaign.is_bookmarked = is_bookmarked
+        hydrate_campaign_bookmarks(db, [campaign], user_id)
         
     return campaign
 
