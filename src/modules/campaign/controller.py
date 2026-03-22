@@ -10,7 +10,7 @@ from fastapi import Form
 from . import repo
 from src.modules.model import controller as predict_controller
 from src.modules.model.schema import InputData
-from src.modules.auth import get_current_user
+from src.modules.auth import get_current_user, get_optional_current_user
 
 from fastapi import BackgroundTasks
 from src.modules.campaign.background import generate_campaign_embedding
@@ -45,9 +45,14 @@ def fetch_campaigns_by_user_id(user_id: UUID, db: Session = Depends(get_db)):
     return service.get_campaigns_by_user_id(db, user_id)
     
 @router.get("/{campaign_id}", response_model=schema.CampaignOut)
-def get_campaign(campaign_id: UUID, clerk_id: str | None = Query(None), db: Session = Depends(get_db)):
+async def get_campaign(
+    campaign_id: UUID,
+    payload: Optional[dict] = Depends(get_optional_current_user),
+    db: Session = Depends(get_db)
+):
     user_id = None
-    if clerk_id:
+    if payload:
+        clerk_id = payload.get("sub")
         try:
             user = get_user_by_clerk_id(db, clerk_id)
             if user:
