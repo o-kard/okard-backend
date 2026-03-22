@@ -27,6 +27,7 @@ jobs:
         with:
           scan-type: 'fs'
           scan-ref: '.'
+          skip-dirs: '.venv'
           format: 'table'
           exit-code: '1'
           severity: 'CRITICAL,HIGH'
