@@ -1,7 +1,7 @@
 from uuid import uuid4
 from sqlalchemy import Column, ForeignKey, Integer, String, Text, DateTime
 from sqlalchemy.orm import relationship, backref, query_expression, Mapped
-from datetime import datetime
+from datetime import datetime, timezone
 from src.database.db import Base
 from sqlalchemy.dialects.postgresql import UUID
 from typing import Optional
@@ -18,8 +18,8 @@ class Comment(Base):
     
     content = Column(Text, nullable=False)
     likes = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     is_liked: Mapped[bool] = query_expression()
 
     parent = relationship(
@@ -36,4 +36,4 @@ class CommentLike(Base):
 
     comment_id = Column(UUID(as_uuid=True), ForeignKey("comment.id", ondelete="CASCADE"), primary_key=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey("user.id", ondelete="CASCADE"), primary_key=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
