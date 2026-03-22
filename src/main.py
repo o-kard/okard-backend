@@ -39,6 +39,8 @@ from src.modules.search.controller import router as search_router
 from src.modules.for_you.controller import router as for_you_router
 from src.modules.campaign_recommend.controller import router as campaign_recommend_router
 from src.modules.bookmark.controller import router as bookmark_router
+from src.modules.edit_request import model as edit_request_model
+from src.modules.common.enums import EditRequestStatus
 
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -89,13 +91,41 @@ async def expire_campaigns_task():
         # Run every 5 minutes
         await asyncio.sleep(300)
 
+async def expire_edit_requests_task():
+    while True:
+        try:
+            db = SessionLocal()
+            now_utc = datetime.now(timezone.utc)
+            
+            expired_requests = db.query(edit_request_model.EditRequest).filter(
+                edit_request_model.EditRequest.status == EditRequestStatus.pending,
+                edit_request_model.EditRequest.expires_at != None,
+                edit_request_model.EditRequest.expires_at < now_utc
+            ).all()
+
+            for req in expired_requests:
+                req.status = EditRequestStatus.expired
+                req.resolved_at = now_utc
+
+            if expired_requests:
+                db.commit()
+            
+            db.close()
+        except Exception as e:
+            print(f"Error in expire_edit_requests_task: {e}")
+        
+        # Run every 5 minutes
+        await asyncio.sleep(300)
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: spawn the background task
-    task = asyncio.create_task(expire_campaigns_task())
+    # Startup: spawn the background tasks
+    task1 = asyncio.create_task(expire_campaigns_task())
+    task2 = asyncio.create_task(expire_edit_requests_task())
     yield
-    # Shutdown: cancel the task
-    task.cancel()
+    # Shutdown: cancel the tasks
+    task1.cancel()
+    task2.cancel()
 
 Base.metadata.create_all(bind=engine)
 
