@@ -207,19 +207,19 @@ async def update_campaign(
 
     # 1) update campaign fields
     if campaign_data:
-        # Prevent direct update of goal_amount (must use Edit Request)
-        if campaign_data.goal_amount is not None and campaign_data.goal_amount != db_campaign.goal_amount:
-            raise HTTPException(
-                status_code=400, 
-                detail="Goal amount cannot be updated directly. Please submit an Edit Request."
-            )
-        
-        # Prevent direct update of effective_end_date (must use Edit Request)
-        if campaign_data.effective_end_date is not None and campaign_data.effective_end_date != db_campaign.effective_end_date:
-            raise HTTPException(
-                status_code=400, 
-                detail="Campaign end date cannot be updated directly. Please submit an Edit Request."
-            )
+        # If there are supporters, prevent direct update of critical fields (must use Edit Request)
+        if db_campaign.supporter > 0:
+            if campaign_data.goal_amount is not None and campaign_data.goal_amount != db_campaign.goal_amount:
+                raise HTTPException(
+                    status_code=400, 
+                    detail="Goal amount cannot be updated directly once there are supporters. Please submit an Edit Request."
+                )
+            
+            if campaign_data.effective_end_date is not None and campaign_data.effective_end_date != db_campaign.effective_end_date:
+                raise HTTPException(
+                    status_code=400, 
+                    detail="Campaign end date cannot be updated directly once there are supporters. Please submit an Edit Request."
+                )
 
         repo.update_campaign(db, db_campaign, campaign_data)
 
