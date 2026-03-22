@@ -36,3 +36,33 @@ def delete_bookmark(db: Session, user_id: UUID, campaign_id: UUID) -> bool:
     result = db.execute(query)
     db.flush()
     return result.rowcount > 0
+
+def hydrate_campaign_bookmarks(db: Session, campaigns: List[any], user_id: UUID | None):
+    if not user_id or not campaigns:
+        for c in campaigns:
+            if isinstance(c, dict):
+                campaign_obj = c.get("campaign")
+                if campaign_obj:
+                    campaign_obj.is_bookmarked = False
+            else:
+                c.is_bookmarked = False
+        return
+
+    campaign_list = []
+    campaign_ids = []
+    for c in campaigns:
+        if isinstance(c, dict) and "campaign" in c:
+            obj = c["campaign"]
+        else:
+            obj = c
+        campaign_list.append(obj)
+        campaign_ids.append(obj.id)
+
+    bookmarked_ids = db.execute(
+        select(Bookmark.campaign_id)
+        .where(Bookmark.user_id == user_id, Bookmark.campaign_id.in_(campaign_ids))
+    ).scalars().all()
+    bookmarked_set = set(bookmarked_ids)
+
+    for obj in campaign_list:
+        obj.is_bookmarked = obj.id in bookmarked_set

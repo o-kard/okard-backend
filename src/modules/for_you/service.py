@@ -3,7 +3,7 @@ import numpy as np
 from datetime import datetime, timezone
 import random
 from sqlalchemy.orm import Session
-
+from src.modules.bookmark.repo import hydrate_campaign_bookmarks    
 from src.database import db
 
 from .repo import (
@@ -14,9 +14,6 @@ from .repo import (
     get_campaigns_by_ids,
     get_user_category_affinity,
 )
-
-# from src.modules.home.service import map_campaign_to_home
-
 
 def _normalize(vec: np.ndarray):
     norm = np.linalg.norm(vec)
@@ -193,13 +190,18 @@ def for_you(db: Session, user_id, limit: int = 10):
     top_candidates = dedup[:limit]
     mixed_results = inject_exploration(top_candidates, explore_rate=0.15)
 
-    return [
+    final_results = [
         {
             "campaign": campaign_map[pid],
             "score": score,
         }
         for pid, score in mixed_results
     ]
+
+    if user_id and final_results:
+        hydrate_campaign_bookmarks(db, final_results, user_id)
+
+    return final_results
 
 
 
