@@ -42,6 +42,13 @@ async def create_payment(db: Session, clerk_id: str, data: schema.PaymentCreate)
         if now_utc > campaign.effective_end_date:
             raise HTTPException(status_code=400, detail="This campaign has ended and is no longer accepting payments.")
 
+    if campaign.state == CampaignState.draft:
+        raise HTTPException(status_code=400, detail="This campaign is still a draft and is not accepting payments.")
+    if campaign.state == CampaignState.fail:
+        raise HTTPException(status_code=400, detail="This campaign has failed and is no longer accepting payments.")
+    if campaign.state == CampaignState.suspend:
+        raise HTTPException(status_code=400, detail="This campaign is suspended and is not accepting payments.")
+
     prev_amount = campaign.current_amount 
     goal_amount = campaign.goal_amount 
 
