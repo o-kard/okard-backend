@@ -17,7 +17,7 @@ async def create_edit_request(
     user = await get_user_by_clerk_id(db, clerk_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    return service.create_request(db, user.id, data)
+    return await service.create_request(db, user.id, data)
 
 @router.get("/{request_id}", response_model=schema.EditRequestOut)
 def get_edit_request(request_id: UUID, db: Session = Depends(get_db)):
