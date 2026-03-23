@@ -133,3 +133,13 @@ async def suspend_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+
+@router.put("/{user_id}/activate", response_model=schema.UserResponse)
+async def activate_user(
+    user_id: UUID,
+    db: Session = Depends(get_db)
+):
+    user = await service.activate_user(db, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user

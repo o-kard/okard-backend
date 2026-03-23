@@ -51,3 +51,9 @@ async def suspend_user(db: Session, user_id: UUID):
             campaign.state = CampaignState.suspend
         return repo.suspend_user(db, user)
     return None
+
+async def activate_user(db: Session, user_id: UUID):
+    user = await get_user_by_id(db, user_id)
+    if user:
+        return repo.activate_user(db, user)
+    return None

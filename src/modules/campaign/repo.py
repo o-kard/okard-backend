@@ -43,7 +43,7 @@ def list_campaigns(
     if owner_id:
         query = query.filter(model.Campaign.user_id == owner_id)
 
-    if state and state != "all":
+    if state and state not in ["all", "admin_all"]:
         query = query.filter(model.Campaign.state == state)
     elif state == "all" and not owner_id:
         query = query.filter(model.Campaign.state != CampaignState.draft, model.Campaign.state != CampaignState.suspend)
