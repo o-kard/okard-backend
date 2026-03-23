@@ -59,6 +59,7 @@ class ReferenceType(str, enum.Enum):
     progress = "progress"
     reward = "reward"
     report = "report"
+    edit_request = "edit_request"
 
 class EditRequestStatus(str, enum.Enum):
     pending = "pending"
