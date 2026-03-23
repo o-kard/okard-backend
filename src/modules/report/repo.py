@@ -27,7 +27,7 @@ def update_report_status(db: Session, report_id: UUID, status: ReportStatus) -> 
     report = get_report(db, report_id)
     if report:
         report.status = status
-        if status == ReportStatus.reviewed:
+        if status == ReportStatus.resolved:
             report.resolved_at = datetime.now(timezone.utc)
         else:
             report.resolved_at = None
