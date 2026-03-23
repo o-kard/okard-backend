@@ -118,10 +118,10 @@ class CampaignSummaryOut(BaseModel):
     class Config:
         from_attributes = True
 
-class CitySupporterStat(BaseModel):
-    city: str
+class CountrySupporterStat(BaseModel):
+    country: str
     supporter: int
 
 class CampaignCommunityOut(BaseModel):
     total_supporters: int
-    top_cities: List[CitySupporterStat]
+    top_countries: List[CountrySupporterStat]

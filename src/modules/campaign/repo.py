@@ -14,6 +14,7 @@ from src.modules.bookmark.model import Bookmark
 from src.modules.common.enums import CampaignState
 from src.modules.contributor.model import Contributor
 from src.modules.user.model import User
+from src.modules.country.model import Country
 from sqlalchemy import func
 
 
@@ -161,33 +162,24 @@ def get_campaign_community_stats(db: Session, campaign_id: UUID):
         Contributor.campaign_id == campaign_id
     ).scalar() or 0
 
-    # Get contributors and their addresses
-    contributors = db.query(User.address).join(
-        Contributor, Contributor.user_id == User.id
-    ).filter(
-        Contributor.campaign_id == campaign_id
-    ).all()
-
-    # Simple logic to group by a generalized "city" from address
-    city_counts = {}
-    for (address,) in contributors:
-        if not address:
-            continue
-        # Mock logic: assume address contains province names, or simply use the whole address if short
-        # We can extract common Thai province names or just take the last part of a comma-separated address
-        parts = [p.strip() for p in address.split(",") if p.strip()]
-        city = parts[-1] if parts else "Unknown"
-        
-        # Fallback to some known cities if address is messy (for demo purposes)
-        city_counts[city] = city_counts.get(city, 0) + 1
-
-    # Format the result and get top cities
-    top_cities = [
-        {"city": city, "supporter": count}
-        for city, count in sorted(city_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+    # Get top 10 countries by supporter count
+    query = (
+        db.query(Country.en_name, func.count(func.distinct(Contributor.user_id)))
+        .join(User, User.country_id == Country.id)
+        .join(Contributor, Contributor.user_id == User.id)
+        .filter(Contributor.campaign_id == campaign_id)
+        .group_by(Country.en_name)
+        .order_by(func.count(func.distinct(Contributor.user_id)).desc())
+        .limit(10)
+    )
+    results = query.all()
+    
+    top_countries = [
+        {"country": name, "supporter": count}
+        for name, count in results
     ]
 
     return {
         "total_supporters": total_supporters,
-        "top_cities": top_cities
+        "top_countries": top_countries
     }
