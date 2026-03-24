@@ -7,7 +7,7 @@ from . import service as recommend_service
 from . import schema as recommend_schema
 
 router = APIRouter(
-    prefix="/campaign",
+    prefix="/campaign_recommend",
     tags=["Campaign Recommendation"]
 )
 
