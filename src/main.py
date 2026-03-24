@@ -42,6 +42,10 @@ from src.modules.bookmark.controller import router as bookmark_router
 from src.modules.edit_request import model as edit_request_model
 from src.modules.common.enums import EditRequestStatus
 
+from src.modules.notification import service as notification_service
+from src.modules.notification import schema as notification_schema
+from src.modules.common.enums import NotificationType
+
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 from pathlib import Path
@@ -80,6 +84,18 @@ async def expire_campaigns_task():
                     campaign.state = CampaignState.success
                 else:
                     campaign.state = CampaignState.fail
+                    
+                    notif = notification_schema.NotificationCreate(
+                        user_id=campaign.user_id,             
+                        actor_id=campaign.user_id,                
+                        campaign_id=campaign.id,
+                        notification_title="⚠️ Campaign Failed",
+                        notification_message=(
+                            f"Your campaign \"{campaign.campaign_header}\" has failed to reach its goal before the end date."
+                        ),
+                        type=NotificationType.system_alert,
+                    )
+                    await notification_service.create_notification(db, notif)
 
             if expired_campaigns:
                 db.commit()
