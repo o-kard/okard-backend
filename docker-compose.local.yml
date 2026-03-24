@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  # ----------------------------------------
+  # 1. Database (PostgreSQL)
+  # ----------------------------------------
+  db:
+    image: postgres:15-alpine
+    container_name: okard-local-db
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: okard_admin
+      POSTGRES_PASSWORD: okard5246
+      POSTGRES_DB: o-kard
+    volumes:
+      - okard_local_db_data:/var/lib/postgresql/data
+    command: postgres -c max_connections=300
+
+  # ----------------------------------------
+  # 2. Database GUI (pgAdmin)
+  # ----------------------------------------
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: okard-local-pgadmin
+    restart: unless-stopped
+    depends_on:
+      - db
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@okard.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+
+  # ----------------------------------------
+  # 3. Object Storage (MinIO)
+  # ----------------------------------------
+  minio:
+    image: minio/minio:latest
+    container_name: okard-local-minio
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: okard_admin
+      MINIO_ROOT_PASSWORD: okard5246
+    volumes:
+      - okard_local_minio_data:/data
+    command: server /data --console-address ":9001"
+
+  # ----------------------------------------
+  # 4. MinIO Setup (Auto Create Bucket)
+  # ----------------------------------------
+  minio-setup:
+    image: minio/mc:latest
+    container_name: okard-local-minio-setup
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      echo 'รอ MinIO สตาร์ท 5 วินาที...';
+      sleep 5;
+      echo 'กำลังเชื่อมต่อและสร้าง Bucket...';
+      mc alias set myminio http://minio:9000 okard_admin okard5246;
+      mc mb myminio/crowdfunding-bucket || true; 
+      mc anonymous set download myminio/crowdfunding-bucket;
+      echo 'สร้าง Bucket อัตโนมัติเสร็จสมบูรณ์!';
+      exit 0;
+      "
+
+# ประกาศ Local Volumes ให้ข้อมูลไม่หายตอนปิดคอม
+volumes:
+  okard_local_db_data:
+  okard_local_minio_data:
