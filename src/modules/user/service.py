@@ -7,6 +7,8 @@ from src.modules.creator import repo as creator_repo
 from src.modules.creator.schema import CreatorUpdate
 from src.modules.common.enums import CampaignState
 from uuid import UUID
+from fastapi import HTTPException
+from src.modules.common.enums import UserStatus
 
 async def create_user_from_clerk(
     db: Session, 
@@ -57,3 +59,11 @@ async def activate_user(db: Session, user_id: UUID):
     if user:
         return repo.activate_user(db, user)
     return None
+
+async def check_user_active(db: Session, clerk_id: str):
+    user = await get_user_by_clerk_id(db, clerk_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.status == UserStatus.suspended:
+        raise HTTPException(status_code=403, detail="User is suspended and cannot perform this action")
+    return user
