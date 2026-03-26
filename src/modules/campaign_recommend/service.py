@@ -3,8 +3,10 @@ import numpy as np
 from sqlalchemy.orm import Session
 from uuid import UUID
 from . import repo
+from src.modules.campaign.repo import hydrate_campaign_bookmarks
+from src.modules.user.service import get_user_by_clerk_id
 
-def recommend_by_campaign(db: Session, campaign_id: UUID, top_k: int = 5):
+async def recommend_by_campaign(db: Session, campaign_id: UUID, top_k: int = 5, clerk_id: str | None = None):
     source = repo.get_campaign_by_id(db, campaign_id)
     if not source:
         raise ValueError("Campaign not found")
@@ -12,7 +14,11 @@ def recommend_by_campaign(db: Session, campaign_id: UUID, top_k: int = 5):
     # ✅ fallback ถ้า embedding ยังไม่พร้อม
     if not source.embedding_data or not source.embedding_data.embedding:
         campaigns = repo.fallback_same_category(db, source, top_k)
-        return [{"campaign_id": p.id, "score": 0.0} for p in campaigns]
+        if clerk_id:
+            user = await get_user_by_clerk_id(db, clerk_id)
+            if user:
+                hydrate_campaign_bookmarks(db, campaigns, user.id)
+        return [{"campaign_id": p.id, "score": 0.0, "campaign": p} for p in campaigns]
 
     source_vec = np.array(json.loads(source.embedding_data.embedding))
 
@@ -30,4 +36,21 @@ def recommend_by_campaign(db: Session, campaign_id: UUID, top_k: int = 5):
             continue
 
     scored.sort(key=lambda x: x[1], reverse=True)
-    return [{"campaign_id": pid, "score": s} for pid, s in scored[:top_k]]
+    campaign_ids = [pid for pid, s in scored[:top_k]]
+    campaign_objs = [repo.get_campaign_by_id(db, pid) for pid in campaign_ids]
+    campaign_objs = [p for p in campaign_objs if p]
+
+    # Hydrate bookmarks
+    if clerk_id:
+        user = await get_user_by_clerk_id(db, clerk_id)
+        if user:
+            hydrate_campaign_bookmarks(db, campaign_objs, user.id)
+
+    results = []
+    for p, (pid, s) in zip(campaign_objs, scored[:top_k]):
+        results.append({
+            "campaign_id": pid,
+            "score": s,
+            "campaign": p
+        })
+    return results
