@@ -66,7 +66,8 @@ async def list_campaigns(
         if user:
             user_id = user.id
 
-    return repo.list_campaigns(db, category, q, sort, state, current_user_id=user_id, limit=limit, offset=offset, include_closed=include_closed)
+    items, total = repo.list_campaigns(db, category, q, sort, state, current_user_id=user_id, limit=limit, offset=offset, include_closed=include_closed)
+    return items, total
 
 def get_campaign(db: Session, campaign_id: UUID, user_id: UUID | None = None):
     campaign = repo.get_campaign(db, campaign_id, user_id)

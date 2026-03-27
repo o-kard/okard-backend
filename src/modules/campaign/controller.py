@@ -27,19 +27,25 @@ from src.modules.user.service import check_user_active
 
 router = APIRouter(prefix="/campaign", tags=["Campaign"])
 
-@router.get("", response_model=list[schema.CampaignOut])
+@router.get("", response_model=schema.CampaignListResponse)
 async def list_campaigns(
     category: Optional[str] = Query(None),
     q: Optional[str] = Query(None),
     sort: Optional[str] = Query("newest"),
     state: Optional[str] = Query("published"),
     clerk_id: Optional[str] = Query(None),
-    limit: Optional[int] = Query(None),
-    offset: Optional[int] = Query(None),
+    limit: Optional[int] = Query(12),
+    offset: Optional[int] = Query(0),
     include_closed: bool = Query(True),
     db: Session = Depends(get_db)
 ):
-    return await service.list_campaigns(db, category, q, sort, state, clerk_id, limit, offset, include_closed)
+    items, total = await service.list_campaigns(db, category, q, sort, state, clerk_id, limit, offset, include_closed)
+    return {
+        "items": items,
+        "total": total,
+        "page": (offset // limit) + 1 if limit else 1,
+        "limit": limit
+    }
 
 @router.get("/campaign-by-user/{user_id}", response_model=List[schema.CampaignOut])
 def fetch_campaigns_by_user_id(user_id: UUID, db: Session = Depends(get_db)):
