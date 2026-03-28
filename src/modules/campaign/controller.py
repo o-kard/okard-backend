@@ -41,6 +41,31 @@ async def list_campaigns(
 ):
     return await service.list_campaigns(db, category, q, sort, state, clerk_id, limit, offset, include_closed)
 
+@router.get("/pagination", response_model=schema.CampaignPaginationOut)
+async def list_campaigns_pagination(
+    category: Optional[str] = Query(None),
+    q: Optional[str] = Query(None),
+    sort: Optional[str] = Query("newest"),
+    state: Optional[str] = Query("published"),
+    clerk_id: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    size: int = Query(12, ge=1),
+    include_closed: bool = Query(True),
+    db: Session = Depends(get_db)
+):
+    offset = (page - 1) * size
+    campaigns, total = await service.list_campaign_pagination(
+        db, category, q, sort, state, clerk_id, size, offset, include_closed
+    )
+    pages = (total + size - 1) // size
+    return {
+        "items": campaigns,
+        "total": total,
+        "page": page,
+        "size": size,
+        "pages": pages
+    }
+
 @router.get("/campaign-by-user/{user_id}", response_model=List[schema.CampaignOut])
 def fetch_campaigns_by_user_id(user_id: UUID, db: Session = Depends(get_db)):
     return service.get_campaigns_by_user_id(db, user_id)
