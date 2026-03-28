@@ -125,3 +125,10 @@ class CountrySupporterStat(BaseModel):
 class CampaignCommunityOut(BaseModel):
     total_supporters: int
     top_countries: List[CountrySupporterStat]
+    
+class CampaignPaginationOut(BaseModel):
+    items: List[CampaignOut]
+    total: int
+    page: int
+    size: int
+    pages: int

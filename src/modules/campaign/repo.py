@@ -5,6 +5,7 @@ from src.modules.information import model as info_model
 from src.modules.media import model as media_model
 from src.modules.reward import model as reward_model
 from src.modules.user import model as user_model
+from typing import Optional
 
 from .model import Campaign
 from src.modules.bookmark.repo import hydrate_campaign_bookmarks
@@ -83,6 +84,76 @@ def list_campaigns(
     hydrate_campaign_bookmarks(db, campaigns, current_user_id)
 
     return campaigns
+
+def list_campaigns_paginated(
+    db: Session,
+    category: Optional[str] = None,
+    q: Optional[str] = None,
+    sort: Optional[str] = "newest",
+    state: Optional[str] = "published",
+    current_user_id: UUID | None = None,
+    owner_id: UUID | None = None,
+    limit: int | None = None,
+    offset: int | None = None,
+    include_closed: bool = True
+):
+    query = db.query(model.Campaign).options(
+        joinedload(Campaign.user).joinedload(user_model.User.media),
+        joinedload(Campaign.user).joinedload(user_model.User.campaigns),
+        joinedload(Campaign.user).joinedload(user_model.User.creator),
+        joinedload(model.Campaign.media),
+        joinedload(model.Campaign.informations).joinedload(info_model.Information.media), 
+        joinedload(model.Campaign.rewards).joinedload(reward_model.Reward.media),
+        joinedload(model.Campaign.models),
+    )
+
+    if owner_id:
+        query = query.filter(model.Campaign.user_id == owner_id)
+
+    if state and state not in ["all", "admin_all"]:
+        query = query.filter(model.Campaign.state == state)
+    elif state == "all" and not owner_id:
+        query = query.filter(model.Campaign.state != CampaignState.draft, model.Campaign.state != CampaignState.suspend)
+
+    if category:
+        query = query.filter(model.Campaign.category == category)
+
+    if q:
+        search = f"%{q}%"
+        query = query.filter(
+            or_(
+                model.Campaign.campaign_header.ilike(search),
+                model.Campaign.campaign_description.ilike(search)
+            )
+        )
+
+    if not include_closed:
+        now = datetime.now(timezone.utc)
+        query = query.filter(model.Campaign.effective_end_date > now)
+
+    # Calculate total before pagination
+    total = query.count()
+
+    if sort == "newest":
+        query = query.order_by(desc(model.Campaign.created_at))
+    elif sort == "ending_soon":
+        now = datetime.now(timezone.utc)
+        query = query.filter(model.Campaign.effective_end_date > now).order_by(asc(model.Campaign.effective_end_date))
+    elif sort == "popular":
+        query = query.order_by(desc(model.Campaign.supporter))
+    elif sort == "updated":
+        query = query.order_by(desc(model.Campaign.updated_at))
+        
+    if offset is not None:
+        query = query.offset(offset)
+    if limit is not None:
+        query = query.limit(limit)
+
+    campaigns = query.all()
+    
+    hydrate_campaign_bookmarks(db, campaigns, current_user_id)
+
+    return campaigns, total
 
 def get_campaign(db: Session, campaign_id, user_id: UUID | None = None):
     campaign = (

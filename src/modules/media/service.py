@@ -55,9 +55,9 @@ async def create_media_from_upload(
     
     content = await file.read()
     
-    allowed_types = ["image/jpeg", "image/png", "image/gif", "image/webp", "video/mp4", "video/quicktime", "video/webm"]
+    allowed_types = ["image/jpeg", "image/png", "image/gif", "image/webp", "video/mp4", "video/quicktime", "video/webm", "application/pdf"]
     if file.content_type not in allowed_types:
-        raise HTTPException(status_code=400, detail=f"Unsupported file type for {file.filename}. Allowed: jpg, png, gif, webp, mp4, mov, webm")
+        raise HTTPException(status_code=400, detail=f"Unsupported file type for {file.filename}. Allowed: jpg, png, gif, webp, mp4, mov, webm, pdf")
 
     # Upload to MinIO
     await file.seek(0)
@@ -125,9 +125,9 @@ async def _save_files_and_create_media(
         validate_image_size(file)
         content = await file.read()
         
-        allowed_types = ["image/jpeg", "image/png", "image/gif", "image/webp", "video/mp4", "video/quicktime", "video/webm"]
+        allowed_types = ["image/jpeg", "image/png", "image/gif", "image/webp", "video/mp4", "video/quicktime", "video/webm", "application/pdf"]
         if file.content_type not in allowed_types:
-            raise HTTPException(status_code=400, detail=f"Unsupported file type for {file.filename}. Allowed: jpg, png, gif, webp, mp4, mov, webm")
+            raise HTTPException(status_code=400, detail=f"Unsupported file type for {file.filename}. Allowed: jpg, png, gif, webp, mp4, mov, webm, pdf")
 
         img_order = order_map.get(file.filename, i)
         media_id = uuid4()

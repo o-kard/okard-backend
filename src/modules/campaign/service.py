@@ -68,6 +68,24 @@ async def list_campaigns(
 
     return repo.list_campaigns(db, category, q, sort, state, current_user_id=user_id, limit=limit, offset=offset, include_closed=include_closed)
 
+async def list_campaign_pagination(
+    db: Session,
+    category: str | None = None,
+    q: str | None = None,
+    sort: str | None = None,
+    state: str | None = "published",
+    clerk_id: str | None = None,
+    limit: int | None = None,
+    offset: int | None = None,
+    include_closed: bool = True
+):
+    user_id = None
+    if clerk_id:
+        user = await get_user_by_clerk_id(db, clerk_id)
+        if user:
+            user_id = user.id
+    return repo.list_campaigns_paginated(db, category, q, sort, state, user_id, None, limit, offset, include_closed)
+
 def get_campaign(db: Session, campaign_id: UUID, user_id: UUID | None = None):
     campaign = repo.get_campaign(db, campaign_id, user_id)
     if not campaign:
