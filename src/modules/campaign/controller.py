@@ -27,24 +27,36 @@ from src.modules.user.service import check_user_active
 
 router = APIRouter(prefix="/campaign", tags=["Campaign"])
 
-@router.get("", response_model=schema.CampaignListResponse)
+@router.get("", response_model=Union[schema.CampaignListResponse, List[schema.CampaignOut]])
 async def list_campaigns(
     category: Optional[str] = Query(None),
     q: Optional[str] = Query(None),
     sort: Optional[str] = Query("newest"),
     state: Optional[str] = Query("published"),
     clerk_id: Optional[str] = Query(None),
-    limit: Optional[int] = Query(12),
-    offset: Optional[int] = Query(0),
+    limit: Optional[int] = Query(None),
+    offset: Optional[int] = Query(None),
     include_closed: bool = Query(True),
     db: Session = Depends(get_db)
 ):
-    items, total = await service.list_campaigns(db, category, q, sort, state, clerk_id, limit, offset, include_closed)
+    # Default values for internal service call if not provided
+    effective_limit = limit if limit is not None else 12
+    effective_offset = offset if offset is not None else 0
+
+    items, total = await service.list_campaigns(
+        db, category, q, sort, state, clerk_id, 
+        effective_limit, effective_offset, include_closed
+    )
+
+    # Backward compatibility: If no pagination requested, return a list
+    if limit is None and offset is None:
+        return items
+
     return {
         "items": items,
         "total": total,
-        "page": (offset // limit) + 1 if limit else 1,
-        "limit": limit
+        "page": (effective_offset // effective_limit) + 1 if effective_limit else 1,
+        "limit": effective_limit
     }
 
 @router.get("/campaign-by-user/{user_id}", response_model=List[schema.CampaignOut])
