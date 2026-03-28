@@ -27,7 +27,7 @@ from src.modules.user.service import check_user_active
 
 router = APIRouter(prefix="/campaign", tags=["Campaign"])
 
-@router.get("", response_model=Union[schema.CampaignListResponse, List[schema.CampaignOut]])
+@router.get("", response_model=list[schema.CampaignOut])
 async def list_campaigns(
     category: Optional[str] = Query(None),
     q: Optional[str] = Query(None),
@@ -39,25 +39,7 @@ async def list_campaigns(
     include_closed: bool = Query(True),
     db: Session = Depends(get_db)
 ):
-    # Default values for internal service call if not provided
-    effective_limit = limit if limit is not None else 12
-    effective_offset = offset if offset is not None else 0
-
-    items, total = await service.list_campaigns(
-        db, category, q, sort, state, clerk_id, 
-        effective_limit, effective_offset, include_closed
-    )
-
-    # Backward compatibility: If no pagination requested, return a list
-    if limit is None and offset is None:
-        return items
-
-    return {
-        "items": items,
-        "total": total,
-        "page": (effective_offset // effective_limit) + 1 if effective_limit else 1,
-        "limit": effective_limit
-    }
+    return await service.list_campaigns(db, category, q, sort, state, clerk_id, limit, offset, include_closed)
 
 @router.get("/campaign-by-user/{user_id}", response_model=List[schema.CampaignOut])
 def fetch_campaigns_by_user_id(user_id: UUID, db: Session = Depends(get_db)):
