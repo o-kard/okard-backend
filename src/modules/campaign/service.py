@@ -66,8 +66,7 @@ async def list_campaigns(
         if user:
             user_id = user.id
 
-    items, total = repo.list_campaigns(db, category, q, sort, state, current_user_id=user_id, limit=limit, offset=offset, include_closed=include_closed)
-    return items, total
+    return repo.list_campaigns(db, category, q, sort, state, current_user_id=user_id, limit=limit, offset=offset, include_closed=include_closed)
 
 def get_campaign(db: Session, campaign_id: UUID, user_id: UUID | None = None):
     campaign = repo.get_campaign(db, campaign_id, user_id)
@@ -81,8 +80,7 @@ def get_campaign(db: Session, campaign_id: UUID, user_id: UUID | None = None):
     return campaign
 
 def get_campaigns_by_user_id(db: Session, user_id: UUID):
-    items, _ = repo.list_campaigns(db, owner_id=user_id, state="all")
-    return items
+    return repo.list_campaigns(db, owner_id=user_id, state="all")
 
 def update_campaign(db: Session, campaign_id: UUID, campaign_data: schema.CampaignUpdate):
     db_campaign = get_campaign(db, campaign_id)

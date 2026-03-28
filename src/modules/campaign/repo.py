@@ -73,9 +73,6 @@ def list_campaigns(
         query = query.order_by(desc(model.Campaign.supporter))
     elif sort == "updated":
          query = query.order_by(desc(model.Campaign.updated_at))
-    # Count total before limit/offset
-    total = query.count()
-
     if offset is not None:
         query = query.offset(offset)
     if limit is not None:
@@ -85,7 +82,7 @@ def list_campaigns(
     
     hydrate_campaign_bookmarks(db, campaigns, current_user_id)
 
-    return campaigns, total
+    return campaigns
 
 def get_campaign(db: Session, campaign_id, user_id: UUID | None = None):
     campaign = (
