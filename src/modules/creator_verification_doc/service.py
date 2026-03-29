@@ -7,10 +7,9 @@ from typing import Optional
 
 from src.modules.common.enums import StorageProvider, VerificationDocType
 from . import repo, schema
+from src.modules.common.minio_service import MinioService
 
-BASE_DIR = Path(__file__).resolve().parents[2]
-UPLOAD_DIR = BASE_DIR / "uploads" / "verification_docs"
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+minio_service = MinioService()
 
 async def create_verification_doc_from_upload(
     db: Session,
@@ -19,18 +18,21 @@ async def create_verification_doc_from_upload(
     file: UploadFile
 ) -> schema.CreatorVerificationDocOut:
     
+    # Store file content for size checking
     content = await file.read()
-    ext = os.path.splitext(file.filename)[1]
-    file_name = f"{uuid4().hex}{ext}"
-    file_path = UPLOAD_DIR / file_name
-
-    with open(file_path, "wb") as f:
-        f.write(content)
+    await file.seek(0)
+    
+    # Upload to MinIO
+    folder_path = f"verification_docs/{creator_id}"
+    minio_url = minio_service.upload_file(file, folder=folder_path)
+    
+    if not minio_url:
+        raise ValueError("Failed to upload file to MinIO")
 
     doc_create = schema.CreatorVerificationDocCreate(
         creator_id=creator_id,
         type=doc_type,
-        file_path=str(file_path.relative_to(BASE_DIR)), # Store relative path
+        file_path=minio_url,
         storage_provider=StorageProvider.minio,
         mime_type=file.content_type,
         file_size=len(content)
