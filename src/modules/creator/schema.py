@@ -4,6 +4,7 @@ from datetime import datetime
 from uuid import UUID
 
 from src.modules.common.enums import VerificationStatus
+from src.modules.creator_verification_doc.schema import CreatorVerificationDocOut
 
 class CreatorBase(BaseModel):
     bio: Optional[str] = None
@@ -25,6 +26,7 @@ class CreatorOut(CreatorBase):
     verified_by: Optional[UUID] = None
     rejection_reason: Optional[str] = None
     created_at: datetime
+    verification_docs: List[CreatorVerificationDocOut] = []
     
     class Config:
         from_attributes = True
@@ -45,6 +47,7 @@ class CreatorResponse(BaseModel):
     campaign_number: int
     bio: Optional[str] = None
     social_links: Optional[list[dict]] = None
+    verification_docs: List[CreatorVerificationDocOut] = []
     
     class Config:
         from_attributes = True
