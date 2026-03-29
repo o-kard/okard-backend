@@ -2,11 +2,18 @@
 from sqlalchemy.orm import Session, selectinload
 from src.modules.campaign.model import Campaign
 from sqlalchemy import func, case
+from sqlalchemy import or_, and_
+from datetime import datetime, timezone
+from src.modules.bookmark.repo import hydrate_campaign_bookmarks
+from src.modules.bookmark.model import Bookmark
+from sqlalchemy import select
+from uuid import UUID
 
 def get_top_pledged_campaigns(
     db: Session,
     limit: int,
     category: str | None = None,
+    user_id: UUID | None = None,
 ):
     query = (
         db.query(Campaign)
@@ -19,12 +26,27 @@ def get_top_pledged_campaigns(
     if category:
         query = query.filter(Campaign.category == category)
 
-    return (
+    now = datetime.now(timezone.utc)
+    query = query.filter(
+        or_(
+            Campaign.state == "published",
+            and_(
+                Campaign.state == "success",
+                Campaign.effective_end_date > now
+            )
+        )
+    )
+
+    campaigns = (
         query
         .order_by(Campaign.current_amount.desc())
         .limit(limit)
         .all()
     )
+
+    hydrate_campaign_bookmarks(db, campaigns, user_id)
+
+    return campaigns
     
 def get_category_stats(db: Session):
     funded_case = case(

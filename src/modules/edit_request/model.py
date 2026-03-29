@@ -22,6 +22,7 @@ class EditRequest(Base):
 
     approvers = relationship("EditRequestApprover", backref="edit_request", cascade="all, delete-orphan")
     votes = relationship("EditRequestVote", backref="edit_request", cascade="all, delete-orphan")
+    requester = relationship("User", foreign_keys=[requester_id])
 
 class EditRequestApprover(Base):
     __tablename__ = "edit_request_approver"

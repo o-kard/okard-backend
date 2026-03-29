@@ -1,4 +1,4 @@
-name: PR Check (PRD)
+name: PR Check Backend (PRD)
 
 on:
   pull_request:
@@ -21,6 +21,16 @@ jobs:
 
       - name: Install dependencies
         run: uv sync --frozen
+
+      - name: Run Trivy vulnerability scanner (Filesystem)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          skip-dirs: '.venv'
+          format: 'table'
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
 
       - name: Install Ruff
         run: uv tool install ruff

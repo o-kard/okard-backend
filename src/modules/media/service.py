@@ -24,11 +24,15 @@ async def create_media_from_upload(
     file: UploadFile,
     campaign_id: Optional[UUID] = None,
     clerk_id: Optional[str] = None,
+    ref_type: Optional[str] = None,
 ):
     ref_id = None
-    ref_type = None
+    requested_ref_type = ref_type # track if user requested a specific type
 
-    if clerk_id:
+    if campaign_id:
+        ref_id = campaign_id
+        ref_type = ReferenceType(requested_ref_type) if requested_ref_type else ReferenceType.campaign
+    elif clerk_id:
         user = await get_user_by_clerk_id(db, clerk_id)
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
@@ -44,10 +48,6 @@ async def create_media_from_upload(
 
         ref_id = user.id
         ref_type = ReferenceType.user
-            
-    elif campaign_id:
-        ref_id = campaign_id
-        ref_type = ReferenceType.campaign
     else:
         raise ValueError("Either campaign_id or user_id is required")
     
@@ -55,9 +55,9 @@ async def create_media_from_upload(
     
     content = await file.read()
     
-    allowed_types = ["image/jpeg", "image/png", "image/gif", "image/webp", "video/mp4", "video/quicktime", "video/webm"]
+    allowed_types = ["image/jpeg", "image/png", "image/gif", "image/webp", "video/mp4", "video/quicktime", "video/webm", "application/pdf"]
     if file.content_type not in allowed_types:
-        raise HTTPException(status_code=400, detail=f"Unsupported file type for {file.filename}. Allowed: jpg, png, gif, webp, mp4, mov, webm")
+        raise HTTPException(status_code=400, detail=f"Unsupported file type for {file.filename}. Allowed: jpg, png, gif, webp, mp4, mov, webm, pdf")
 
     # Upload to MinIO
     await file.seek(0)
@@ -125,9 +125,9 @@ async def _save_files_and_create_media(
         validate_image_size(file)
         content = await file.read()
         
-        allowed_types = ["image/jpeg", "image/png", "image/gif", "image/webp", "video/mp4", "video/quicktime", "video/webm"]
+        allowed_types = ["image/jpeg", "image/png", "image/gif", "image/webp", "video/mp4", "video/quicktime", "video/webm", "application/pdf"]
         if file.content_type not in allowed_types:
-            raise HTTPException(status_code=400, detail=f"Unsupported file type for {file.filename}. Allowed: jpg, png, gif, webp, mp4, mov, webm")
+            raise HTTPException(status_code=400, detail=f"Unsupported file type for {file.filename}. Allowed: jpg, png, gif, webp, mp4, mov, webm, pdf")
 
         img_order = order_map.get(file.filename, i)
         media_id = uuid4()

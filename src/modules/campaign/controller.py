@@ -10,7 +10,7 @@ from fastapi import Form
 from . import repo
 from src.modules.model import controller as predict_controller
 from src.modules.model.schema import InputData
-from src.modules.auth import get_current_user
+from src.modules.auth import get_current_user, get_optional_current_user
 
 from fastapi import BackgroundTasks
 from src.modules.campaign.background import generate_campaign_embedding
@@ -23,6 +23,7 @@ from src.modules.campaign_recommend import schema as recommend_schema
 from src.modules.for_you import service as for_you_service
 from src.modules.for_you import schema as for_you_schema
 from src.modules.common.file_utils import validate_image_size
+from src.modules.user.service import check_user_active
 
 router = APIRouter(prefix="/campaign", tags=["Campaign"])
 
@@ -33,18 +34,51 @@ async def list_campaigns(
     sort: Optional[str] = Query("newest"),
     state: Optional[str] = Query("published"),
     clerk_id: Optional[str] = Query(None),
+    limit: Optional[int] = Query(None),
+    offset: Optional[int] = Query(None),
+    include_closed: bool = Query(True),
     db: Session = Depends(get_db)
 ):
-    return await service.list_campaigns(db, category, q, sort, state, clerk_id)
+    return await service.list_campaigns(db, category, q, sort, state, clerk_id, limit, offset, include_closed)
+
+@router.get("/pagination", response_model=schema.CampaignPaginationOut)
+async def list_campaigns_pagination(
+    category: Optional[str] = Query(None),
+    q: Optional[str] = Query(None),
+    sort: Optional[str] = Query("newest"),
+    state: Optional[str] = Query("published"),
+    clerk_id: Optional[str] = Query(None),
+    page: int = Query(1, ge=1),
+    size: int = Query(12, ge=1),
+    include_closed: bool = Query(True),
+    db: Session = Depends(get_db)
+):
+    offset = (page - 1) * size
+    campaigns, total = await service.list_campaign_pagination(
+        db, category, q, sort, state, clerk_id, size, offset, include_closed
+    )
+    pages = (total + size - 1) // size
+    return {
+        "items": campaigns,
+        "total": total,
+        "page": page,
+        "size": size,
+        "pages": pages
+    }
 
 @router.get("/campaign-by-user/{user_id}", response_model=List[schema.CampaignOut])
 def fetch_campaigns_by_user_id(user_id: UUID, db: Session = Depends(get_db)):
     return service.get_campaigns_by_user_id(db, user_id)
     
 @router.get("/{campaign_id}", response_model=schema.CampaignOut)
-def get_campaign(campaign_id: UUID, clerk_id: str | None = Query(None), db: Session = Depends(get_db)):
+async def get_campaign(
+    campaign_id: UUID,
+    payload: Optional[dict] = Depends(get_optional_current_user),
+    db: Session = Depends(get_db)
+):
     user_id = None
-    if clerk_id:
+    if payload:
+        clerk_id = payload.get("sub")
         try:
             user = get_user_by_clerk_id(db, clerk_id)
             if user:
@@ -81,6 +115,8 @@ async def create(
     db: Session = Depends(get_db),
     background_tasks: BackgroundTasks = None,
 ):
+    await check_user_active(db, clerk_id)
+    
     try:
         campaign_obj = schema.CampaignCreate(**json.loads(campaign_data))
     except Exception:
@@ -166,6 +202,8 @@ async def update(
     media_reorder: Union[str, None] = Form(None),   
     background_tasks: BackgroundTasks = None,
 ):
+    await check_user_active(db, clerk_id)
+
     # --- parse campaign_data ---
     campaign_upd = None
     if campaign_data:
@@ -238,14 +276,16 @@ async def update(
     return campaign
     
 @router.put("/{campaign_id}/state", response_model=schema.CampaignOut)
-def update_campaign_state(
+async def update_campaign_state(
     campaign_id: UUID,
     state: schema.CampaignState = Query(...),
     current_user: dict = Depends(get_current_user),
     db: Session = Depends(get_db),
 ): 
+    clerk_id = current_user["sub"]
+    await check_user_active(db, clerk_id)
+
     try:
-        clerk_id = current_user["sub"]
         service.verify_campaign_owner(db, campaign_id, clerk_id)
         return service.change_campaign_state(db, campaign_id, state)
     except ValueError:

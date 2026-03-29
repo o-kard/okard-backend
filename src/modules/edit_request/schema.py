@@ -33,6 +33,7 @@ class EditRequestOut(EditRequestBase):
     proposed_changes: Optional[Dict[str, Any]] = None
     expires_at: Optional[datetime] = None
     approvers: List[EditRequestApproverOut] = []
+    requester_username: Optional[str] = None
 
     class Config:
         from_attributes = True

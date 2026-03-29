@@ -80,6 +80,14 @@ class CampaignSummaryOut(BaseModel):
     current_amount: int
     supporter: int
 
+    effective_start_from: Optional[datetime] = None
+    effective_end_date: Optional[datetime] = None
+
+    @computed_field
+    @property
+    def supporters(self) -> int:
+        return self.supporter
+
     media: List[MediaOut]
     user: UserPublicResponse
     state: Optional[CampaignState]
@@ -110,10 +118,18 @@ class CampaignSummaryOut(BaseModel):
     class Config:
         from_attributes = True
 
-class CitySupporterStat(BaseModel):
-    city: str
+class CountrySupporterStat(BaseModel):
+    country: str
     supporter: int
+    total_amount: int = 0
 
 class CampaignCommunityOut(BaseModel):
     total_supporters: int
-    top_cities: List[CitySupporterStat]
+    top_countries: List[CountrySupporterStat]
+    
+class CampaignPaginationOut(BaseModel):
+    items: List[CampaignOut]
+    total: int
+    page: int
+    size: int
+    pages: int

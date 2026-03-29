@@ -52,8 +52,7 @@ async def create_creator(
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
-        # Set user role to creator
-        user_obj.role = UserRole.creator
+        # Update user profile
         user_res = await userService.update_profile(db, clerk_id, user_obj)
         
         # Step 2: Handle image upload/deletion

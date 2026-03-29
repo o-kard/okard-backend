@@ -1,4 +1,4 @@
-name: PR Check (UAT)
+name: PR Check Backend (UAT)
 
 on:
   pull_request:
@@ -22,6 +22,16 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen
 
+      - name: Run Trivy vulnerability scanner (Filesystem)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          skip-dirs: '.venv'
+          format: 'table'
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
+
       - name: Install Ruff
         run: uv tool install ruff
 
@@ -35,6 +45,8 @@ jobs:
         env:
           DATABASE_URL: "postgresql://dummy:dummy@localhost:5432/dummy"
         run: uv run python -c "import src.database.models"
+
+      
 
       # - name: Configure Pyright
       #   run: |

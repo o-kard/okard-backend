@@ -2,17 +2,27 @@ from .repo import get_top_pledged_campaigns
 from .repo import get_category_stats
 from .schema import CategoryStat
 from sqlalchemy.orm import Session
-# from .mapper import map_post_to_home
+from src.modules.user.service import get_user_by_clerk_id
+from uuid import UUID
 
-def get_top_pledged_campaigns_service(
-    db,
+async def get_top_pledged_campaigns_service(
+    db: Session,
     limit: int = 10,
     category: str | None = None,
+    payload: dict | None = None,
 ):
+    user_id = None
+    if payload:
+        clerk_id = payload.get("sub")
+        user = await get_user_by_clerk_id(db, clerk_id)
+        if user:
+            user_id = user.id
+
     campaigns = get_top_pledged_campaigns(
         db=db,
         limit=limit,
         category=category,
+        user_id=user_id,
     )
 
     return campaigns

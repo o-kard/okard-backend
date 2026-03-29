@@ -16,6 +16,7 @@ from pathlib import Path
 from src.modules.user.service import get_user_by_clerk_id
 from src.modules.common.enums import CampaignState
 from src.modules.user.repo import get_user_by_id
+from src.modules.common.enums import UserRole
 import os
 import uuid
 
@@ -42,7 +43,9 @@ async def verify_campaign_owner(db: Session, campaign_id: UUID, clerk_id: str) -
     campaign = repo.get_campaign(db, campaign_id)
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
-    if not user or campaign.user_id != user.id:
+    
+    # Allow if user is owner OR if user is admin
+    if not user or (campaign.user_id != user.id and user.role != UserRole.admin):
         raise HTTPException(status_code=403, detail="Permission denied")
     return campaign
 
@@ -52,7 +55,10 @@ async def list_campaigns(
     q: str | None = None,
     sort: str | None = None,
     state: str | None = "published",
-    clerk_id: str | None = None
+    clerk_id: str | None = None,
+    limit: int | None = None,
+    offset: int | None = None,
+    include_closed: bool = True
 ):
     user_id = None
     if clerk_id:
@@ -60,7 +66,25 @@ async def list_campaigns(
         if user:
             user_id = user.id
 
-    return repo.list_campaigns(db, category, q, sort, state, current_user_id=user_id)
+    return repo.list_campaigns(db, category, q, sort, state, current_user_id=user_id, limit=limit, offset=offset, include_closed=include_closed)
+
+async def list_campaign_pagination(
+    db: Session,
+    category: str | None = None,
+    q: str | None = None,
+    sort: str | None = None,
+    state: str | None = "published",
+    clerk_id: str | None = None,
+    limit: int | None = None,
+    offset: int | None = None,
+    include_closed: bool = True
+):
+    user_id = None
+    if clerk_id:
+        user = await get_user_by_clerk_id(db, clerk_id)
+        if user:
+            user_id = user.id
+    return repo.list_campaigns_paginated(db, category, q, sort, state, user_id, None, limit, offset, include_closed)
 
 def get_campaign(db: Session, campaign_id: UUID, user_id: UUID | None = None):
     campaign = repo.get_campaign(db, campaign_id, user_id)
@@ -74,7 +98,7 @@ def get_campaign(db: Session, campaign_id: UUID, user_id: UUID | None = None):
     return campaign
 
 def get_campaigns_by_user_id(db: Session, user_id: UUID):
-    return repo.list_campaigns(db, owner_id=user_id)
+    return repo.list_campaigns(db, owner_id=user_id, state="all")
 
 def update_campaign(db: Session, campaign_id: UUID, campaign_data: schema.CampaignUpdate):
     db_campaign = get_campaign(db, campaign_id)
@@ -201,19 +225,19 @@ async def update_campaign(
 
     # 1) update campaign fields
     if campaign_data:
-        # Prevent direct update of goal_amount (must use Edit Request)
-        if campaign_data.goal_amount is not None and campaign_data.goal_amount != db_campaign.goal_amount:
-            raise HTTPException(
-                status_code=400, 
-                detail="Goal amount cannot be updated directly. Please submit an Edit Request."
-            )
-        
-        # Prevent direct update of effective_end_date (must use Edit Request)
-        if campaign_data.effective_end_date is not None and campaign_data.effective_end_date != db_campaign.effective_end_date:
-            raise HTTPException(
-                status_code=400, 
-                detail="Campaign end date cannot be updated directly. Please submit an Edit Request."
-            )
+        # If there are supporters, prevent direct update of critical fields (must use Edit Request)
+        if db_campaign.supporter > 0:
+            if campaign_data.goal_amount is not None and campaign_data.goal_amount != db_campaign.goal_amount:
+                raise HTTPException(
+                    status_code=400, 
+                    detail="Goal amount cannot be updated directly once there are supporters. Please submit an Edit Request."
+                )
+            
+            if campaign_data.effective_end_date is not None and campaign_data.effective_end_date != db_campaign.effective_end_date:
+                raise HTTPException(
+                    status_code=400, 
+                    detail="Campaign end date cannot be updated directly once there are supporters. Please submit an Edit Request."
+                )
 
         repo.update_campaign(db, db_campaign, campaign_data)
 

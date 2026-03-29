@@ -17,8 +17,8 @@ class Creator(Base):
 
     # Trust / Verification
     verification_status = Column(Enum(VerificationStatus), default=VerificationStatus.pending)  # pending / verified / rejected
-    verification_submitted_at = Column(DateTime, nullable=True)
-    verified_at = Column(DateTime, nullable=True)
+    verification_submitted_at = Column(DateTime(timezone=True), nullable=True)
+    verified_at = Column(DateTime(timezone=True), nullable=True)
     verified_by = Column(UUID(as_uuid=True), ForeignKey("user.id"), nullable=True)
     rejection_reason = Column(Text, nullable=True)
 

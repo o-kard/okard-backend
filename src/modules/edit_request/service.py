@@ -65,9 +65,26 @@ def _generate_display_changes(campaign: campaign_model.Campaign, proposed_change
         
     return "\n".join(lines)
 
-def create_request(db: Session, requester_id: UUID, data: schema.EditRequestCreate):
+def _map_request_out(req: model.EditRequest) -> schema.EditRequestOut:
+    out = schema.EditRequestOut.model_validate(req)
+    if req.requester:
+        out.requester_username = req.requester.username
+    return out
+
+async def create_request(db: Session, requester_id: UUID, data: schema.EditRequestCreate):
     # Verify Campaign exists
     campaign = campaign_service.get_campaign(db, data.campaign_id)
+
+    # Check for existing pending requests
+    existing_pending = db.query(model.EditRequest).filter(
+        model.EditRequest.campaign_id == data.campaign_id,
+        model.EditRequest.status == EditRequestStatus.pending
+    ).first()
+    if existing_pending:
+        raise HTTPException(
+            status_code=400, 
+            detail="An edit request is already pending for this campaign. Please wait for it to be resolved or expire."
+        )
 
     # Generate display_changes
     if data.proposed_changes:
@@ -85,6 +102,9 @@ def create_request(db: Session, requester_id: UUID, data: schema.EditRequestCrea
     # Create Request
     edit_req = repo.create_edit_request(db, requester_id, data)
     
+    # Refresh to load requester
+    db.refresh(edit_req)
+    
     # Create Approvers
     repo.create_approvers(db, edit_req.id, contributors)
     
@@ -98,9 +118,9 @@ def create_request(db: Session, requester_id: UUID, data: schema.EditRequestCrea
             notification_message=f"A request to edit campaign '{campaign.campaign_header}' needs your vote.",
             type=NotificationType.system_alert 
         )
-        notification_service.create_notification(db, notif_payload)
+        await notification_service.create_notification(db, notif_payload)
         
-    return edit_req
+    return _map_request_out(edit_req)
     
 async def cast_vote(db: Session, edit_request_id: UUID, user_id: UUID, data: schema.VoteCreate):
     # Get Request with locking to prevent race conditions
@@ -253,7 +273,7 @@ async def cast_vote(db: Session, edit_request_id: UUID, user_id: UUID, data: sch
                 notification_message=f"Your edit request for '{db_campaign.campaign_header}' has been {status_text.lower()} by supporters.",
                 type=NotificationType.system_alert
             )
-            notification_service.create_notification(db, notif)
+            await notification_service.create_notification(db, notif)
     
     db.commit()
     db.refresh(req)
@@ -261,4 +281,5 @@ async def cast_vote(db: Session, edit_request_id: UUID, user_id: UUID, data: sch
     return vote
 
 def get_pending_requests(db: Session, campaign_id: UUID):
-    return repo.get_pending_requests_by_campaign(db, campaign_id)
+    requests = repo.get_pending_requests_by_campaign(db, campaign_id)
+    return [_map_request_out(r) for r in requests]

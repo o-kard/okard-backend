@@ -5,15 +5,17 @@ from src.modules.information import model as info_model
 from src.modules.media import model as media_model
 from src.modules.reward import model as reward_model
 from src.modules.user import model as user_model
+from typing import Optional
 
 from .model import Campaign
-
+from src.modules.bookmark.repo import hydrate_campaign_bookmarks
 from sqlalchemy import or_, desc, asc, select, exists
 from datetime import datetime, timezone
 from src.modules.bookmark.model import Bookmark
 from src.modules.common.enums import CampaignState
 from src.modules.contributor.model import Contributor
 from src.modules.user.model import User
+from src.modules.country.model import Country
 from sqlalchemy import func
 
 
@@ -24,7 +26,10 @@ def list_campaigns(
     sort: str | None = None,
     state: str | None = "published",
     owner_id: UUID | None = None,
-    current_user_id: UUID | None = None
+    current_user_id: UUID | None = None,
+    limit: int | None = None,
+    offset: int | None = None,
+    include_closed: bool = True
 ):
     query = db.query(model.Campaign).options(
         joinedload(Campaign.user).joinedload(user_model.User.media),
@@ -39,7 +44,7 @@ def list_campaigns(
     if owner_id:
         query = query.filter(model.Campaign.user_id == owner_id)
 
-    if state and state != "all":
+    if state and state not in ["all", "admin_all"]:
         query = query.filter(model.Campaign.state == state)
     elif state == "all" and not owner_id:
         query = query.filter(model.Campaign.state != CampaignState.draft, model.Campaign.state != CampaignState.suspend)
@@ -56,6 +61,10 @@ def list_campaigns(
             )
         )
 
+    if not include_closed:
+        now = datetime.now(timezone.utc)
+        query = query.filter(model.Campaign.effective_end_date > now)
+
     if sort == "newest":
         query = query.order_by(desc(model.Campaign.created_at))
     elif sort == "ending_soon":
@@ -65,23 +74,86 @@ def list_campaigns(
         query = query.order_by(desc(model.Campaign.supporter))
     elif sort == "updated":
          query = query.order_by(desc(model.Campaign.updated_at))
-    else:
-        query = query.order_by(desc(model.Campaign.created_at))
+    if offset is not None:
+        query = query.offset(offset)
+    if limit is not None:
+        query = query.limit(limit)
 
     campaigns = query.all()
     
-    # Optional: Attach is_bookmarked if current_user_id is provided
-    if current_user_id and campaigns:
-        campaign_ids = [p.id for p in campaigns]
-        bookmarked_ids = db.execute(
-            select(Bookmark.campaign_id)
-            .where(Bookmark.user_id == current_user_id, Bookmark.campaign_id.in_(campaign_ids))
-        ).scalars().all()
-        bookmarked_set = set(bookmarked_ids)
-        for p in campaigns:
-            p.is_bookmarked = p.id in bookmarked_set
+    hydrate_campaign_bookmarks(db, campaigns, current_user_id)
 
     return campaigns
+
+def list_campaigns_paginated(
+    db: Session,
+    category: Optional[str] = None,
+    q: Optional[str] = None,
+    sort: Optional[str] = "newest",
+    state: Optional[str] = "published",
+    current_user_id: UUID | None = None,
+    owner_id: UUID | None = None,
+    limit: int | None = None,
+    offset: int | None = None,
+    include_closed: bool = True
+):
+    query = db.query(model.Campaign).options(
+        joinedload(Campaign.user).joinedload(user_model.User.media),
+        joinedload(Campaign.user).joinedload(user_model.User.campaigns),
+        joinedload(Campaign.user).joinedload(user_model.User.creator),
+        joinedload(model.Campaign.media),
+        joinedload(model.Campaign.informations).joinedload(info_model.Information.media), 
+        joinedload(model.Campaign.rewards).joinedload(reward_model.Reward.media),
+        joinedload(model.Campaign.models),
+    )
+
+    if owner_id:
+        query = query.filter(model.Campaign.user_id == owner_id)
+
+    if state and state not in ["all", "admin_all"]:
+        query = query.filter(model.Campaign.state == state)
+    elif state == "all" and not owner_id:
+        query = query.filter(model.Campaign.state != CampaignState.draft, model.Campaign.state != CampaignState.suspend)
+
+    if category:
+        query = query.filter(model.Campaign.category == category)
+
+    if q:
+        search = f"%{q}%"
+        query = query.filter(
+            or_(
+                model.Campaign.campaign_header.ilike(search),
+                model.Campaign.campaign_description.ilike(search)
+            )
+        )
+
+    if not include_closed:
+        now = datetime.now(timezone.utc)
+        query = query.filter(model.Campaign.effective_end_date > now)
+
+    # Calculate total before pagination
+    total = query.count()
+
+    if sort == "newest":
+        query = query.order_by(desc(model.Campaign.created_at))
+    elif sort == "ending_soon":
+        now = datetime.now(timezone.utc)
+        query = query.filter(model.Campaign.effective_end_date > now).order_by(asc(model.Campaign.effective_end_date))
+    elif sort == "popular":
+        query = query.order_by(desc(model.Campaign.supporter))
+    elif sort == "updated":
+        query = query.order_by(desc(model.Campaign.updated_at))
+        
+    if offset is not None:
+        query = query.offset(offset)
+    if limit is not None:
+        query = query.limit(limit)
+
+    campaigns = query.all()
+    
+    hydrate_campaign_bookmarks(db, campaigns, current_user_id)
+
+    return campaigns, total
 
 def get_campaign(db: Session, campaign_id, user_id: UUID | None = None):
     campaign = (
@@ -100,10 +172,7 @@ def get_campaign(db: Session, campaign_id, user_id: UUID | None = None):
     )
     
     if campaign and user_id:
-        is_bookmarked = db.execute(
-            select(exists().where(Bookmark.user_id == user_id, Bookmark.campaign_id == campaign_id))
-        ).scalar()
-        campaign.is_bookmarked = is_bookmarked
+        hydrate_campaign_bookmarks(db, [campaign], user_id)
         
     return campaign
 
@@ -164,33 +233,28 @@ def get_campaign_community_stats(db: Session, campaign_id: UUID):
         Contributor.campaign_id == campaign_id
     ).scalar() or 0
 
-    # Get contributors and their addresses
-    contributors = db.query(User.address).join(
-        Contributor, Contributor.user_id == User.id
-    ).filter(
-        Contributor.campaign_id == campaign_id
-    ).all()
-
-    # Simple logic to group by a generalized "city" from address
-    city_counts = {}
-    for (address,) in contributors:
-        if not address:
-            continue
-        # Mock logic: assume address contains province names, or simply use the whole address if short
-        # We can extract common Thai province names or just take the last part of a comma-separated address
-        parts = [p.strip() for p in address.split(",") if p.strip()]
-        city = parts[-1] if parts else "Unknown"
-        
-        # Fallback to some known cities if address is messy (for demo purposes)
-        city_counts[city] = city_counts.get(city, 0) + 1
-
-    # Format the result and get top cities
-    top_cities = [
-        {"city": city, "supporter": count}
-        for city, count in sorted(city_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+    # Get top 10 countries by supporter count
+    query = (
+        db.query(
+            Country.en_name, 
+            func.count(func.distinct(Contributor.user_id)),
+            func.sum(Contributor.total_amount)
+        )
+        .join(User, User.country_id == Country.id)
+        .join(Contributor, Contributor.user_id == User.id)
+        .filter(Contributor.campaign_id == campaign_id)
+        .group_by(Country.en_name)
+        .order_by(func.count(func.distinct(Contributor.user_id)).desc())
+        .limit(10)
+    )
+    results = query.all()
+    
+    top_countries = [
+        {"country": name, "supporter": count, "total_amount": amount or 0}
+        for name, count, amount in results
     ]
 
     return {
         "total_supporters": total_supporters,
-        "top_cities": top_cities
+        "top_countries": top_countries
     }

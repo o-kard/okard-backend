@@ -1,4 +1,4 @@
-name: Deploy to UAT
+name: Deploy Backend to UAT
 
 on:
   push:

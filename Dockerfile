@@ -18,6 +18,9 @@ COPY pyproject.toml uv.lock ./
 # Install production dependencies into a virtual environment
 RUN uv sync --frozen --no-dev --no-install-project
 
+# Pre-download the sentence-transformer model
+RUN .venv/bin/python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2', cache_folder='/app/.cache')"
+
 # ── Stage 2: runtime ──────────────────────────────────────────────────────────
 FROM python:3.11.9-slim AS runtime
 
@@ -34,6 +37,8 @@ WORKDIR /app
 
 # Copy the virtual environment from the builder stage
 COPY --from=builder /app/.venv /app/.venv
+# Copy the pre-downloaded model cache
+COPY --from=builder --chown=appuser:appgroup /app/.cache /app/.cache
 
 # 2. ก๊อปปี้ไฟล์ที่มีขนาดใหญ่ (โมเดล) แยกมาก่อน เพื่อให้โดน Cache ไว้ถ้าโมเดลไม่เปลี่ยน
 COPY --chown=appuser:appgroup src/modules/model/pkl_files/ ./src/modules/model/pkl_files/
@@ -49,7 +54,8 @@ USER appuser
 # Use the venv's Python/scripts
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
+    PYTHONDONTWRITEBYTECODE=1 \
+    HF_HOME="/app/.cache"
 
 EXPOSE 8000
 

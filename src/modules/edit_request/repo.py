@@ -25,7 +25,7 @@ def create_edit_request(db: Session, requester_id: UUID, data: schema.EditReques
     return db_obj
 
 def get_edit_request(db: Session, request_id: UUID) -> model.EditRequest:
-    return db.query(model.EditRequest).filter(model.EditRequest.id == request_id).first()
+    return db.query(model.EditRequest).filter(model.EditRequest.id == request_id).options(joinedload(model.EditRequest.requester)).first()
 
 def get_top_contributors(db: Session, campaign_id: UUID, limit: int = 11) -> List[Contributor]:
     return (
@@ -73,4 +73,4 @@ def get_pending_requests_by_campaign(db: Session, campaign_id: UUID):
     return db.query(model.EditRequest).filter(
         model.EditRequest.campaign_id == campaign_id,
         model.EditRequest.status == EditRequestStatus.pending
-    ).options(joinedload(model.EditRequest.approvers)).all()
+    ).options(joinedload(model.EditRequest.approvers), joinedload(model.EditRequest.requester)).all()

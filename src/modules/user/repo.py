@@ -47,3 +47,9 @@ def suspend_user(db: Session, user: model.User):
     db.commit()
     db.refresh(user)
     return user
+
+def activate_user(db: Session, user: model.User):
+    user.status = UserStatus.active
+    db.commit()
+    db.refresh(user)
+    return user

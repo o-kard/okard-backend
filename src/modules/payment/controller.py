@@ -5,7 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from . import service, schema
-from src.database.db import get_db 
+from src.database.db import get_db
+from src.modules.user.service import check_user_active
 
 router = APIRouter(prefix="/payment", tags=["payment"])
 
@@ -22,6 +23,7 @@ def get_payment(payment_id: UUID, db: Session = Depends(get_db)):
 
 @router.post("", response_model=schema.PaymentOut, status_code=201)
 async def create_payment(payload: schema.PaymentCreate, clerk_id: str = Query(...), db: Session = Depends(get_db)):
+    await check_user_active(db, clerk_id)
     return await service.create_payment(db,clerk_id, payload)
 
 @router.delete("/{payment_id}")
