@@ -235,7 +235,11 @@ def get_campaign_community_stats(db: Session, campaign_id: UUID):
 
     # Get top 10 countries by supporter count
     query = (
-        db.query(Country.en_name, func.count(func.distinct(Contributor.user_id)))
+        db.query(
+            Country.en_name, 
+            func.count(func.distinct(Contributor.user_id)),
+            func.sum(Contributor.total_amount)
+        )
         .join(User, User.country_id == Country.id)
         .join(Contributor, Contributor.user_id == User.id)
         .filter(Contributor.campaign_id == campaign_id)
@@ -246,8 +250,8 @@ def get_campaign_community_stats(db: Session, campaign_id: UUID):
     results = query.all()
     
     top_countries = [
-        {"country": name, "supporter": count}
-        for name, count in results
+        {"country": name, "supporter": count, "total_amount": amount or 0}
+        for name, count, amount in results
     ]
 
     return {

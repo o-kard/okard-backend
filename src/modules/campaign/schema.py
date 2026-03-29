@@ -121,6 +121,7 @@ class CampaignSummaryOut(BaseModel):
 class CountrySupporterStat(BaseModel):
     country: str
     supporter: int
+    total_amount: int = 0
 
 class CampaignCommunityOut(BaseModel):
     total_supporters: int
