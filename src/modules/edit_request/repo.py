@@ -74,3 +74,10 @@ def get_pending_requests_by_campaign(db: Session, campaign_id: UUID):
         model.EditRequest.campaign_id == campaign_id,
         model.EditRequest.status == EditRequestStatus.pending
     ).options(joinedload(model.EditRequest.approvers), joinedload(model.EditRequest.requester)).all()
+
+def get_pending_requests_creator(db: Session, user_id: UUID):
+    return db.query(model.EditRequest).filter(
+        model.EditRequest.requester_id == user_id,
+        model.EditRequest.description == 'Creator Profile Update',
+        model.EditRequest.status == EditRequestStatus.pending
+    ).options(joinedload(model.EditRequest.approvers), joinedload(model.EditRequest.requester)).all()

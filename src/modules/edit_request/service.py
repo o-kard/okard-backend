@@ -9,8 +9,10 @@ from src.modules.notification import service as notification_service, schema as 
 from src.modules.common.enums import NotificationType, EditRequestStatus, VoteDecision, CampaignState
 from src.modules.campaign import service as campaign_service, schema as campaign_schema, repo as campaign_repo, model as campaign_model
 from src.modules.reward import repo as reward_repo, schema as reward_schema
-from src.modules.media import repo as media_repo
-
+from src.modules.user import service as userService, schema as userSchema
+from src.modules.media import repo as media_repo, service as mediaService
+from src.modules.common.clerk_helper import get_clerk_client
+import urllib.request
 
 def _generate_display_changes(campaign: campaign_model.Campaign, proposed_changes: dict) -> str:
     lines = []
@@ -283,3 +285,101 @@ async def cast_vote(db: Session, edit_request_id: UUID, user_id: UUID, data: sch
 def get_pending_requests(db: Session, campaign_id: UUID):
     requests = repo.get_pending_requests_by_campaign(db, campaign_id)
     return [_map_request_out(r) for r in requests]
+
+async def create_creator_profile_update_request(
+    db: Session, 
+    user_id: UUID, 
+    user_data_changes: dict, 
+    new_image_url: str = None, 
+    remove_image: bool = False
+):
+    proposed_changes = {
+        "user_changes": user_data_changes,
+        "new_image_url": new_image_url,
+        "remove_image": remove_image
+    }
+
+    # Check for existing pending requests for creator profile update
+    existing_pending = db.query(model.EditRequest).filter(
+        model.EditRequest.requester_id == user_id,
+        model.EditRequest.description == "Creator Profile Update",
+        model.EditRequest.status == EditRequestStatus.pending
+    ).first()
+    
+    if existing_pending:
+        # Update existing request instead of throwing error, or just override
+        existing_pending.proposed_changes = proposed_changes
+        db.commit()
+        db.refresh(existing_pending)
+        return _map_request_out(existing_pending)
+
+    data = schema.EditRequestCreate(
+        campaign_id=None,
+        description="Creator Profile Update",
+        display_changes="Requested to update profile information.",
+        proposed_changes=proposed_changes
+    )
+    
+    # Expiration 7 days
+    from datetime import timedelta
+    data.expires_at = datetime.now(timezone.utc) + timedelta(days=7)
+
+    edit_req = repo.create_edit_request(db, user_id, data)
+    db.refresh(edit_req)
+    
+    return _map_request_out(edit_req)
+
+async def process_creator_profile_update(db: Session, user, action: str):
+    pending_requests = repo.get_pending_requests_creator(db, user.id)
+    if not pending_requests:
+        raise HTTPException(status_code=404, detail="No pending requests found")
+    req = pending_requests[0]
+
+    if action == "verified":
+        if req.proposed_changes:
+            changes = req.proposed_changes
+            user_changes = changes.get("user_changes", {})
+            new_image_url = changes.get("new_image_url")
+            remove_img = changes.get("remove_image", False)
+
+            if user_changes:
+                update_obj = userSchema.UserUpdate(**user_changes)
+                await userService.update_profile(db, user.clerk_id, update_obj)
+                
+                # Sync username to Clerk
+                try:
+                    clerk_client = get_clerk_client()
+                    if "username" in user_changes and user_changes["username"]:
+                        clerk_client.users.update(user_id=user.clerk_id, username=user_changes["username"])
+                except Exception as e:
+                    print(f"Failed to update clerk username: {e}")
+            
+            if new_image_url or remove_img:
+                mediaService.update_user_media_from_url(db, user, new_image_url, remove_img)
+                
+                # Sync profile image to Clerk
+                try:
+                    clerk_client = get_clerk_client()
+                    if remove_img:
+                        clerk_client.users.delete_profile_image(user_id=user.clerk_id)
+                    elif new_image_url:
+                        req_obj = urllib.request.Request(new_image_url, headers={'User-Agent': 'Mozilla/5.0'})
+                        with urllib.request.urlopen(req_obj) as response:
+                            file_content = response.read()
+                            file_name = new_image_url.split("/")[-1].split("?")[0]
+                            if not file_name:
+                                file_name = "profile.jpg"
+                            clerk_client.users.set_profile_image(
+                                user_id=user.clerk_id,
+                                file={
+                                    "file_name": file_name,
+                                    "content": file_content
+                                }
+                            )
+                except Exception as e:
+                    print(f"Failed to update clerk profile image: {e}")
+
+        req.status = EditRequestStatus.approved
+    elif action == "rejected":
+        req.status = EditRequestStatus.rejected
+

@@ -10,7 +10,7 @@ class EditRequest(Base):
     __tablename__ = "edit_request"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    campaign_id = Column(UUID(as_uuid=True), ForeignKey("campaign.id"), nullable=False)
+    campaign_id = Column(UUID(as_uuid=True), ForeignKey("campaign.id"), nullable=True)
     requester_id = Column(UUID(as_uuid=True), ForeignKey("user.id"), nullable=False)
     description = Column(String, nullable=True)
     display_changes = Column(String, nullable=True)
