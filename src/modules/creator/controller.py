@@ -10,8 +10,14 @@ from . import service, schema
 from src.modules.user import schema as userSchema
 from src.modules.user import service as userService
 from src.modules.media import service as mediaService
+from src.modules.media import model as mediaModel
+from src.modules.media import repo as mediaRepo
+from src.modules.edit_request import service as editRequestService
+from src.modules.edit_request import model as editRequestModel
 from src.modules.creator_verification_doc import service as verificationDocService
-from src.modules.common.enums import UserRole, VerificationDocType, VerificationStatus
+from src.modules.common.enums import UserRole, VerificationDocType, VerificationStatus, EditRequestStatus, ReferenceType
+from src.modules.common.file_utils import validate_image_size
+from uuid import uuid4
 
 router = APIRouter(prefix="/creator", tags=["Creator"])
 
@@ -52,19 +58,24 @@ async def create_creator(
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
-        # Update user profile
-        user_res = await userService.update_profile(db, clerk_id, user_obj)
-        
-        # Step 2: Handle image upload/deletion
+        # Step 2: Handle image upload to MinIO directly (without linking yet)
+        minio_url = None
         if image:
-            await mediaService.create_media_from_upload(
-                db, 
-                file=image,
-                clerk_id=user_res.clerk_id
-            )
-        elif remove_image and user_res.image:
-            await mediaService.delete_media(db, user_res.image.id)
-        
+            folder_path = f"user/{user.id}/pending_edit"
+            validate_image_size(image)
+            await image.seek(0)
+            minio_url = mediaService.minio_service.upload_file(image, folder=folder_path)
+            
+        user_changes_dict = user_obj.model_dump(mode='json', exclude_unset=True)
+        user_changes_dict.pop("remove_image", None)
+
+        await editRequestService.create_creator_profile_update_request(
+            db=db,
+            user_id=user.id,
+            user_data_changes=user_changes_dict,
+            new_image_url=minio_url,
+            remove_image=remove_image
+        )
         # Step 3: Create creator profile
         creator_res = await service.create_creator(db, creator_obj, clerk_id)
         
@@ -175,8 +186,13 @@ async def verify_creator(
     if user:
         if status == VerificationStatus.verified.value:
             user.role = UserRole.creator
+            await editRequestService.process_creator_profile_update(db, user, "verified")
+                
         elif status in [VerificationStatus.rejected.value, VerificationStatus.pending.value]:
             user.role = UserRole.user
+            if status == VerificationStatus.rejected.value:
+                await editRequestService.process_creator_profile_update(db, user, "rejected")
+
         db.commit()
             
     return creator

@@ -170,3 +170,34 @@ async def _save_files_and_create_media(
     if commit:
         db.commit()
     return saved_media
+
+def update_user_media_from_url(db: Session, user, new_image_url: Optional[str] = None, remove_img: bool = False):
+    if new_image_url:
+        # Clean old media
+        if user.media:
+            old_path = user.media.path
+            if old_path:
+                minio_service.delete_file(old_path)
+            repo.delete_media(db, user.media)
+
+        # Create new media
+        media_id = uuid4()
+        db_media = model.Media(
+            id=media_id,
+            orig_name="profile_update.jpg",
+            media_type="image/jpeg",
+            file_size=0,
+            path=new_image_url,
+            display_order=0
+        )
+        repo.create_media(db, db_media)
+        
+        handler = model.MediaHandler(
+            media_id=media_id,
+            reference_id=user.id,
+            type=ReferenceType.user
+        )
+        db.add(handler)
+        
+    elif remove_img and user.media:
+        delete_media(db, user.media.id)

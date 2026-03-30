@@ -6,7 +6,7 @@ from src.modules.common.enums import EditRequestStatus, VoteDecision
 from src.modules.user.schema import UserPublicResponse
 
 class EditRequestBase(BaseModel):
-    campaign_id: UUID
+    campaign_id: Optional[UUID] = None
     description: Optional[str] = None
     display_changes: Optional[str] = None
     proposed_changes: Optional[Dict[str, Any]] = None
