@@ -155,7 +155,24 @@ async def create_campaign(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # 1) create campaign
+    # 1) Pre-validation: ensure media file count matches item count for new campaigns
+    if informations:
+        inf_media = information_media or []
+        if len(inf_media) < len(informations):
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Missing media for informations. Required: {len(informations)}, Provided: {len(inf_media)}"
+            )
+    
+    if rewards:
+        rew_media = reward_media or []
+        if len(rew_media) < len(rewards):
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Missing media for rewards. Required: {len(rewards)}, Provided: {len(rew_media)}"
+            )
+
+    # 2) Create campaign record
     db_campaign = repo.create_campaign_by_user(db, user_id=user.id, data=campaign_data)
 
     predict_input = {
@@ -171,19 +188,17 @@ async def create_campaign(
     }
 
     input_model = model_schema.InputData(**predict_input)
-
     await model_service.predict(db,input_model,db_campaign.id,True)
 
-    # 2) campaign media
+    # 3) campaign media
     await media_service._save_files_and_create_media(
         db, parent_type="campaign", parent_id=db_campaign.id,
         files=campaign_media or [], media_manifest=campaign_media_manifest or []
     )
 
-    # 3) informations
+    # 4) informations
     if informations:
         files = information_media or []
-
         for idx, item in enumerate(informations):
             payload = {k: v for k, v in item.items() if k not in ["id", "isEdited"]}
             payload.setdefault("campaign_id", db_campaign.id)
@@ -193,6 +208,7 @@ async def create_campaign(
                 db=db, information_data=[create_obj], files=[files[idx]]
             )
 
+    # 5) rewards
     if rewards:
         rfiles = reward_media or []
         for idx, item in enumerate(rewards):
