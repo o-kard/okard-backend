@@ -5,19 +5,32 @@ from fastapi import UploadFile, HTTPException
 from . import repo, schema, model
 from src.modules.media import service as media_service
 from src.modules.common.enums import ReportStatus
+from src.modules.common.file_utils import validate_file
 
 async def create_report(db: Session, reporter_id: UUID, data: schema.ReportCreate, files: Optional[List[UploadFile]] = None):
-    report = repo.create_report(db, reporter_id, data)
-    
     if files:
-        await media_service._save_files_and_create_media(
-            db=db,
-            parent_type="report",
-            parent_id=report.id,
-            files=files
-        )
+        for file in files:
+            validate_file(file)
+
+    try:
+        report = repo.create_report(db, reporter_id, data)
         
-    return report
+        if files:
+            await media_service._save_files_and_create_media(
+                db=db,
+                parent_type="report",
+                parent_id=report.id,
+                files=files,
+                commit=False
+            )
+        
+        db.commit()
+        db.refresh(report)
+        return report
+
+    except Exception as e:
+        db.rollback()
+        raise e
 
 def list_reports(db: Session):
     return repo.get_reports(db)
