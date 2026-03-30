@@ -13,8 +13,7 @@ def create_report(db: Session, reporter_id: UUID, data: schema.ReportCreate) -> 
         description=data.description
     )
     db.add(db_obj)
-    db.commit()
-    db.refresh(db_obj)
+    db.flush()
     return db_obj
 
 def get_report(db: Session, report_id: UUID) -> model.Report:

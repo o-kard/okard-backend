@@ -12,7 +12,7 @@ from fastapi import UploadFile
 from typing import Optional
 from src.modules.common.enums import ReferenceType
 from src.modules.common.clerk_helper import update_clerk_user_password
-from src.modules.common.file_utils import validate_image_size
+from src.modules.common.file_utils import validate_image_size, validate_file
 from src.modules.common.minio_service import MinioService
 
 BASE_DIR = Path(__file__).resolve().parents[2]
@@ -27,7 +27,7 @@ async def create_media_from_upload(
     ref_type: Optional[str] = None,
 ):
     ref_id = None
-    requested_ref_type = ref_type # track if user requested a specific type
+    requested_ref_type = ref_type
 
     if campaign_id:
         ref_id = campaign_id
@@ -51,13 +51,8 @@ async def create_media_from_upload(
     else:
         raise ValueError("Either campaign_id or user_id is required")
     
-    validate_image_size(file)
-    
+    validate_file(file)
     content = await file.read()
-    
-    allowed_types = ["image/jpeg", "image/png", "image/gif", "image/webp", "video/mp4", "video/quicktime", "video/webm", "application/pdf"]
-    if file.content_type not in allowed_types:
-        raise HTTPException(status_code=400, detail=f"Unsupported file type for {file.filename}. Allowed: jpg, png, gif, webp, mp4, mov, webm, pdf")
 
     # Upload to MinIO
     await file.seek(0)
@@ -111,6 +106,7 @@ async def _save_files_and_create_media(
     files: List[UploadFile],
     media_manifest: Optional[List[dict]] = None,  
     start_index: int = 1,                           
+    commit: bool = True
 ):
     saved_media = []
 
@@ -122,12 +118,8 @@ async def _save_files_and_create_media(
                 order_map[fn] = int(it.get("display_order") or start_index)
 
     for i, file in enumerate(files, start=start_index):
-        validate_image_size(file)
+        validate_file(file)
         content = await file.read()
-        
-        allowed_types = ["image/jpeg", "image/png", "image/gif", "image/webp", "video/mp4", "video/quicktime", "video/webm", "application/pdf"]
-        if file.content_type not in allowed_types:
-            raise HTTPException(status_code=400, detail=f"Unsupported file type for {file.filename}. Allowed: jpg, png, gif, webp, mp4, mov, webm, pdf")
 
         img_order = order_map.get(file.filename, i)
         media_id = uuid4()
@@ -175,5 +167,6 @@ async def _save_files_and_create_media(
         
         saved_media.append(media)
     
-    db.commit()
+    if commit:
+        db.commit()
     return saved_media
