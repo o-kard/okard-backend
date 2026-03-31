@@ -7,7 +7,7 @@
 โมดูล Common เป็นชั้นทรัพยากรแบบไร้สถานะ (Stateless resource layer)
 
 ### โครงสร้างฝั่ง Backend (`okard-backend/src/modules/common`)
-- [enums.py](file:///Users/wisapat/Documents/Code/Git/okard-backend/src/modules/common/enums.py): แหล่งข้อมูลอ้างอิงหลักสำหรับสถานะระบบทั้งหมด (เช่น PostState, UserRole, ReportStatus เป็นต้น)
+- [enums.py](file:///Users/wisapat/Documents/Code/Git/okard-backend/src/modules/common/enums.py): แหล่งข้อมูลอ้างอิงหลักสำหรับสถานะระบบทั้งหมด (เช่น CampaignState, UserRole, ReportStatus เป็นต้น)
 - [minio_service.py](file:///Users/wisapat/Documents/Code/Git/okard-backend/src/modules/common/minio_service.py): ตัวหุ้มการทำงานระดับสูง (Wrapper) สำหรับการจัดการไฟล์แบบ MinIO/S3
 - [clerk_helper.py](file:///Users/wisapat/Documents/Code/Git/okard-backend/src/modules/common/clerk_helper.py): ตัวช่วยสำหรับการโต้ตอบกับ Clerk API
 
@@ -35,7 +35,7 @@ graph TD
 
 | โปรแกรมย่อย (ไฟล์) | หน้าที่ความรับผิดชอบ | องค์ประกอบหลัก |
 | :--- | :--- | :--- |
-| `enums.py` | กำหนดการเปลี่ยนสถานะและบทบาทสำหรับทั้งแอปพลิเคชัน | `PostState`, `UserRole`, `NotificationType`, `ReportStatus` |
+| `enums.py` | กำหนดการเปลี่ยนสถานะและบทบาทสำหรับทั้งแอปพลิเคชัน | `CampaignState`, `UserRole`, `NotificationType`, `ReportStatus` |
 | `minio_service.py` | API ที่ถูกทำเป็นนามธรรมสำหรับการ `upload_file`, `delete_file` และ `get_presigned_url` | การรวมเข้ากับ `MinioClient` |
 | `clerk_helper.py` | เชื่อมซิงค์ข้อมูลผู้ใช้และตรวจสอบเซสชันกับผู้ให้บริการข้อมูลตัวตน Clerk | ตัวหุ้ม `ClerkSDK` |
 
@@ -43,7 +43,7 @@ graph TD
 
 ## 4. การสื่อสารและพารามิเตอร์ (Communication & Parameters)
 
-1.  **ความสอดคล้องของสถานะ (State Consistency)**: การรวมศูนย์ `PostState` (เช่น `draft`, `published`, `success`) ช่วยให้แน่ใจว่าฐานข้อมูล, ตรรกะส่วนหลังบ้าน และส่วนหน้าบ้านจะใช้คำนิยามสถานะเดียวกันเสมอ
+1.  **ความสอดคล้องของสถานะ (State Consistency)**: การรวมศูนย์ `CampaignState` (เช่น `draft`, `published`, `success`) ช่วยให้แน่ใจว่าฐานข้อมูล, ตรรกะส่วนหลังบ้าน และส่วนหน้าบ้านจะใช้คำนิยามสถานะเดียวกันเสมอ
 2.  **การตั้งค่า MinIO**: การตั้งค่าพื้นที่จัดเก็บข้อมูล (ชื่อ Bucket, Access keys) จะถูกส่งผ่านตัวแปรสภาพแวดล้อม (Environment variables) และจัดการในระดับสากลโดย singleton ของ `MinioService`
 3.  **เกราะป้องกันการยืนยันตัวตน (Authentication Guard)**: `clerk_helper` จะมอบคุณสมบัติการทำงานระดับล่างที่ใช้โดยมิดเดิลแวร์ตรวจสอบ JWT ของโมดูล `auth`
 4.  **ประเภทการอ้างอิง (Reference Types)**: Enum `ReferenceType` มีความสำคัญอย่างยิ่งต่อระบบ `MediaHandler` แบบ polymorphic ซึ่งเชื่อมโยงไฟล์กับหน่วยธุรกิจที่แตกต่างกัน

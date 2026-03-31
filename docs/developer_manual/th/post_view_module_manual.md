@@ -1,44 +1,49 @@
-# คู่มือสำหรับนักพัฒนา: โมดูลการเข้าชมโพสต์ (Post View Module)
+# คู่มือสำหรับนักพัฒนา: โมดูลบันทึกการเข้าชมแคมเปญ (Campaign View Module)
 
-โมดูลการเข้าชมโพสต์เป็นบริการยูทิลิตี้ที่ติดตามประวัติปฏิสัมพันธ์ของผู้ใช้ โดยมีวัตถุประสงค์หลักเพื่อส่งข้อมูลให้กับอัลกอริทึมการแนะนำ
+โมดูลบันทึกการเข้าชมแคมเปญทำหน้าที่รับผิดชอบในการติดตามการมีปฏิสัมพันธ์ของผู้ใช้กับแคมเปญต่างๆ ข้อมูลนี้เป็นพื้นฐานสำคัญสำหรับโมดูล "สำหรับคุณ" (For You) เพื่อใช้แนะนำเนื้อหาตามความสนใจส่วนบุคคล
 
 ## 1. โครงสร้างโปรแกรม (Program Structure)
 
-โมดูลการเข้าชมโพสต์เป็นบริการที่เรียบง่ายแต่มีความสำคัญสูง เนื่องจากมีการเขียนข้อมูล (Write) ถี่มาก
+โมดูลนี้ทำงานเบื้องหลังเมื่อผู้ใช้ที่ลงชื่อเข้าใช้แล้วเปิดดูหน้ารายละเอียดแคมเปญ
 
-### โครงสร้างฝั่ง Backend (`okard-backend/src/modules/post_view`)
-- [service.py](file:///Users/wisapat/Documents/Code/Git/okard-backend/src/modules/post_view/service.py): จัดการตรรกะในการบันทึกการเข้าชม
-- [repo.py](file:///Users/wisapat/Documents/Code/Git/okard-backend/src/modules/post_view/repo.py): ใช้ตรรกะแบบ `upsert` เพื่ออัปเดตเวลาการเข้าชมล่าสุด
-- [model.py](file:///Users/wisapat/Documents/Code/Git/okard-backend/src/modules/post_view/model.py): กำหนดตาราง `post_view` พร้อมฟิลด์ `user_id`, `post_id` และ `view_count`
+### โครงสร้างฝั่ง Backend (`okard-backend/src/modules/campaign_view`)
+- [service.py](file:///Users/wisapat/Documents/Code/Git/okard-backend/src/modules/campaign_view/service.py): จัดเตรียมฟังก์ชันสำหรับบันทึกหรืออัปเดตกิจกรรมการเข้าชม
+- [repo.py](file:///Users/wisapat/Documents/Code/Git/okard-backend/src/modules/campaign_view/repo.py): จัดการการดำเนินการ `UPSERT` ในฐานข้อมูลสำหรับตาราง `user_campaign_view`
+- [model.py](file:///Users/wisapat/Documents/Code/Git/okard-backend/src/modules/campaign_view/model.py): กำหนดโครงสร้างตาราง `user_campaign_view` (ความสัมพันธ์ระหว่าง User และ Campaign)
 
 ---
 
 ## 2. ภาพรวมการทำงาน (Top-Down Functional Overview)
 
-การเข้าชมจะถูกบันทึกอย่างเงียบๆ ในขั้นตอนเบื้องหลังเมื่อมีการเรียกดูข้อมูลโพสต์
+เมื่อมีการเรียกดูรายละเอียดแคมเปญ ระบบจะบันทึกเวลาที่เข้าชมล่าสุด
 
 ```mermaid
-graph LR
-    API[Post Controller] -->|กระตุ้น| ViewSvc[Post View Service]
-    ViewSvc -->|Upsert| DB[(ตาราง post_view)]
-    DB -->|อ่านข้อมูล| ForYou[โมดูล สำหรับคุณ]
+sequenceDiagram
+    participant User as ผู้ใช้
+    participant Campaign as โมดูลแคมเปญ (Controller)
+    participant View as View Service
+    participant DB as Postgres DB
+
+    User->>Campaign: GET /campaign/{id}
+    Campaign->>View: log_campaign_view(user_id, campaign_id)
+    View->>DB: UPSERT (อัปเดต timestamp ถ้าเคยดูแล้ว)
+    Campaign-->>User: ส่งกลับข้อมูลแคมเปญ
 ```
 
 ---
 
 ## 3. คำอธิบายโปรแกรมย่อย (Subprogram Descriptions)
 
-### Backend: ชั้นบริการ (Service Layer - [service.py](file:///Users/wisapat/Documents/Code/Git/okard-backend/src/modules/post_view/service.py))
+### Backend: ชั้นบริการ (Service Layer - [service.py](file:///Users/wisapat/Documents/Code/Git/okard-backend/src/modules/campaign_view/service.py))
 
 | โปรแกรมย่อย | หน้าที่ความรับผิดชอบ | ข้อมูลเข้า (Input) | ข้อมูลออก (Output) |
 | :--- | :--- | :--- | :--- |
-| `log_post_view` | เพิ่มจำนวนการเข้าชมหรือสร้างบันทึกใหม่สำหรับคู่ผู้ใช้/โพสต์ | `db`, `user_id`, `post_id` | ไม่มี |
+| `log_campaign_view` | บันทึกการเข้าชมแคมเปญโดยผู้ใช้ และยืนยันการเปลี่ยนแปลง (Commit) ลงฐานข้อมูล | `db`, `user_id`, `campaign_id` | ไม่มี |
 
 ---
 
 ## 4. การสื่อสารและพารามิเตอร์ (Communication & Parameters)
 
-1.  **การกระตุ้นแบบเงียบ**: `PostController` จะกระตุ้นการทำงานของ `log_post_view` โดยอัตโนมัติทุกครั้งที่มีการเรียกดูรายละเอียดโพสต์พร้อมกับ `clerk_id` ที่ผ่านการตรวจสอบสิทธิ์แล้ว
-2.  **ตรรกะการอัปเดต (Upsert Logic)**: เพื่อจัดการการเข้าชมซ้ำอย่างมีประสิทธิภาพ ชั้น Repository จะใช้รูปแบบ "Upsert on Conflict" โดยจะอัปเดตเวลา `updated_at` แทนการสร้างแถวข้อมูลใหม่ที่ซ้ำซ้อน
-3.  **การใช้งานปลายทาง**: ข้อมูลนี้เป็นอินพุตหลักสำหรับการคำนวณเวกเตอร์ความชอบ (Preference vector) ในโมดูล `for_you`
-4.  **ขนาดข้อมูล**: ตารางนี้ได้รับการออกแบบมาเพื่อการอัปเดตที่มีความถี่สูง และควรมีการสร้างดัชนี (Index) ในฟิลด์ `(user_id, post_id)`
+1.  **กลไกการทำงานเบื้องหลัง**: การบันทึกการเข้าชมถูกเรียกใช้โดยตรงจาก `CampaignController` เมื่อมีการดึงข้อมูลรายละเอียดแคมเปญสำเร็จ
+2.  **การจัดการข้อมูลซ้ำ (Idempotency)**: ระบบใช้กลไก `UPSERT` เพื่อให้แน่ใจว่าแต่ละคู่ (User, Campaign) จะมีเพียงหนึ่งแถวเท่านั้นในฐานข้อมูล โดยจะอัปเดตเพียงเวลา `viewed_at` ล่าสุด
+3.  **การระบุตัวตน**: การบันทึกจะเกิดขึ้นเฉพาะเมื่อผู้ใช้มีการยืนยันตัวตนแล้วเท่านั้น (มี `user_id`) หากเป็นการเข้าชมโดยบุคคลทั่วไป (Guest) ระบบจะไม่บันทึกข้อมูลนี้

@@ -1,16 +1,16 @@
 # คู่มือสำหรับนักพัฒนา: โมดูลบุ๊กมาร์ก (Bookmark Module)
 
-โมดูลบุ๊กมาร์กช่วยให้ผู้ใช้สามารถบันทึกโพสต์ไว้ในคอลเลกชันส่วนตัวเพื่อความสะดวกในการเข้าถึงในภายหลัง
+โมดูลบุ๊กมาร์กช่วยให้ผู้ใช้สามารถบันทึกแคมเปญไว้ในคอลเลกชันส่วนตัวเพื่อความสะดวกในการเข้าถึงในภายหลัง
 
 ## 1. โครงสร้างโปรแกรม (Program Structure)
 
-โมดูลบุ๊กมาร์กเป็นยูทิลิตี้ขนาดเล็กที่เชื่อมโยงผู้ใช้และโพสต์เข้าด้วยกัน
+โมดูลบุ๊กมาร์กเป็นยูทิลิตี้ขนาดเล็กที่เชื่อมโยงผู้ใช้และแคมเปญเข้าด้วยกัน
 
 ### โครงสร้างฝั่ง Backend (`okard-backend/src/modules/bookmark`)
-- [controller.py](file:///Users/wisapat/Documents/Code/Git/okard-backend/src/modules/bookmark/controller.py): API สำหรับการสลับสถานะบุ๊กมาร์กและการดึงข้อมูลโพสต์ที่บันทึกไว้
+- [controller.py](file:///Users/wisapat/Documents/Code/Git/okard-backend/src/modules/bookmark/controller.py): API สำหรับการสลับสถานะบุ๊กมาร์กและการดึงข้อมูลแคมเปญที่บันทึกไว้
 - [service.py](file:///Users/wisapat/Documents/Code/Git/okard-backend/src/modules/bookmark/service.py): ตรรกะทางธุรกิจสำหรับการสลับสถานะ (สร้างหรือลบ)
 - [repo.py](file:///Users/wisapat/Documents/Code/Git/okard-backend/src/modules/bookmark/repo.py): การดำเนินการฐานข้อมูลสำหรับตาราง `bookmark`
-- [model.py](file:///Users/wisapat/Documents/Code/Git/okard-backend/src/modules/bookmark/model.py): โมเดล SQLAlchemy ที่กำหนดคู่ของ `user_id` และ `post_id`
+- [model.py](file:///Users/wisapat/Documents/Code/Git/okard-backend/src/modules/bookmark/model.py): โมเดล SQLAlchemy ที่กำหนดคู่ของ `user_id` และ `campaign_id`
 - [schema.py](file:///Users/wisapat/Documents/Code/Git/okard-backend/src/modules/bookmark/schema.py): โครงสร้างข้อมูล (Schemas) สำหรับการตอบกลับพื้นฐาน
 
 ### โครงสร้างฝั่ง Frontend
@@ -30,7 +30,7 @@ sequenceDiagram
     participant Repo as Backend Repo
 
     User->>Front: คลิกไอคอนบุ๊กมาร์ก
-    Front->>Back: POST /bookmark/toggle/{post_id}
+    Front->>Back: POST /bookmark/toggle/{campaign_id}
     Back->>Repo: ตรวจสอบว่ามีบุ๊กมาร์กอยู่แล้วหรือไม่
     alt มีอยู่แล้ว
         Back->>Repo: ลบบุ๊กมาร์ก
@@ -49,8 +49,8 @@ sequenceDiagram
 
 | โปรแกรมย่อย | หน้าที่ความรับผิดชอบ | ข้อมูลเข้า (Input) | ข้อมูลออก (Output) |
 | :--- | :--- | :--- | :--- |
-| `toggle_bookmark` | จัดลำดับตรรกะการสร้าง/ลบตามสถานะที่มีอยู่ | `db`, `user_id`, `post_id` | `{"bookmarked": bool}` |
-| `get_bookmarks` | ดึงรายการโพสต์ที่ผู้ใช้ระบุบุ๊กมาร์กไว้แบบแบ่งหน้า | `db`, `user_id`, `skip`, `limit` | `list[Bookmark]` |
+| `toggle_bookmark` | จัดลำดับตรรกะการสร้าง/ลบตามสถานะที่มีอยู่ | `db`, `user_id`, `campaign_id` | `{"bookmarked": bool}` |
+| `get_bookmarks` | ดึงรายการแคมเปญที่ผู้ใช้ระบุบุ๊กมาร์กไว้แบบแบ่งหน้า | `db`, `user_id`, `skip`, `limit` | `list[Bookmark]` |
 
 ---
 
