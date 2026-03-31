@@ -101,6 +101,7 @@ def for_you(db: Session, user_id, limit: int = 10):
     user_vec = _build_user_vector(db, user_id)
 
     if user_vec is None:
+        print(f"[ForYou] Fallback to popular campaigns for user: {user_id}")
         campaign_ids = get_fallback_popular_campaign_ids(db, limit)
         campaigns = get_campaigns_by_ids(db, campaign_ids)
 
@@ -197,6 +198,13 @@ def for_you(db: Session, user_id, limit: int = 10):
         }
         for pid, score in mixed_results
     ]
+
+    print(f"\n[ForYou] Recommendation for user: {user_id}")
+    for i, res in enumerate(final_results):
+        p = res["campaign"]
+        s = res["score"]
+        print(f"  Rank {i+1}: Score={s:.4f} | {p.campaign_header} ({p.id})")
+    print("-" * 50)
 
     if user_id and final_results:
         hydrate_campaign_bookmarks(db, final_results, user_id)

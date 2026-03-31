@@ -13,6 +13,7 @@ async def recommend_by_campaign(db: Session, campaign_id: UUID, top_k: int = 5, 
 
     # ✅ fallback ถ้า embedding ยังไม่พร้อม
     if not source.embedding_data or not source.embedding_data.embedding:
+        print(f"⚠️ [Recommendation] Fallback to same category for source: {source.campaign_header} ({source.id})")
         campaigns = repo.fallback_same_category(db, source, top_k)
         if clerk_id:
             user = await get_user_by_clerk_id(db, clerk_id)
@@ -39,6 +40,12 @@ async def recommend_by_campaign(db: Session, campaign_id: UUID, top_k: int = 5, 
     campaign_ids = [pid for pid, s in scored[:top_k]]
     campaign_objs = [repo.get_campaign_by_id(db, pid) for pid in campaign_ids]
     campaign_objs = [p for p in campaign_objs if p]
+
+    print(f"\n✨ [Recommendation] Ranking for: {source.campaign_header} ({source.id})")
+    for i, (p, (pid, s)) in enumerate(zip(campaign_objs, scored[:top_k])):
+        if p:
+            print(f"  Rank {i+1}: Score={s:.4f} | {p.campaign_header} ({pid})")
+    print("-" * 50)
 
     # Hydrate bookmarks
     if clerk_id:
