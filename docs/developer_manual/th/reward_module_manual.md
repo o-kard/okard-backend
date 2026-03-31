@@ -4,7 +4,7 @@
 
 ## 1. โครงสร้างโปรแกรม (Program Structure)
 
-เช่นเดียวกับแคมเปญ เอนทิตีของรางวัลเป็นโหนดลูกของโพสต์ (Post) และถูกรวมเข้ากับขั้นตอนการสร้างเนื้อหาอย่างแน่นหนา
+เช่นเดียวกับแคมเปญ เอนทิตีของรางวัลเป็นโหนดลูกของแคมเปญ (Campaign) และถูกรวมเข้ากับขั้นตอนการสร้างเนื้อหาอย่างแน่นหนา
 
 ### โครงสร้างฝั่ง Backend (`okard-backend/src/modules/reward`)
 - [service.py](file:///Users/wisapat/Documents/Code/Git/okard-backend/src/modules/reward/service.py): จัดการตรรกะทางธุรกิจของของรางวัลและกระตุ้นการคำนวณระดับการให้ทุน
@@ -20,10 +20,10 @@
 
 ```mermaid
 graph TD
-    Post[โมดูลโพสต์] -->|จัดหา| Reward[โมดูลของรางวัล]
+    Camp[โมดูลแคมเปญ] -->|จัดหา| Reward[โมดูลของรางวัล]
     Reward -->|มีขีดจำกัดราคา| Payment[โมดูลการชำระเงิน]
     
-    Service[Reward Service] -->|ดำเนินการ| Calculate[calculate_backup_amounts_for_post]
+    Service[Reward Service] -->|ดำเนินการ| Calculate[calculate_backup_amounts_for_campaign]
     Calculate -->|วิเคราะห์| Summary[สรุประดับการให้ทุน]
 ```
 
@@ -37,13 +37,13 @@ graph TD
 | :--- | :--- | :--- | :--- |
 | `create_reward_with_media` | สร้างบันทึกของรางวัลและเชื่อมโยงกับรูปภาพ | `db`, `reward_data` (รายการ), `files` | `List[Reward]` |
 | `update_reward_with_media` | อัปเดตรายละเอียดของรางวัลและสามารถเลือกเปลี่ยนรูปภาพได้ | `db`, `reward_id`, `data`, `files` | `Reward` |
-| `calculate_backup_amounts` | คำนวณการกระจายระดับของรางวัลใหม่ตามรายการการชำระเงินใหม่ | `db`, `post_id` | ไม่มี (อัปเดตลงใน Repo) |
+| `calculate_backup_amounts` | คำนวณการกระจายระดับของรางวัลใหม่ตามรายการการชำระเงินใหม่ | `db`, `campaign_id` | ไม่มี (อัปเดตลงใน Repo) |
 
 ---
 
 ## 4. การสื่อสารและพารามิเตอร์ (Communication & Parameters)
 
 1.  **ระดับการให้ทุน (Funding Tiers)**: พารามิเตอร์ `price` ในโครงสร้างข้อมูลของรางวัลจะเป็นตัวกำหนดจำนวนเงินขั้นต่ำที่ผู้สนับสนุนต้องจ่ายเพื่อรับรางวัลนั้นๆ
-2.  **การวิเคราะห์ระดับรางวัล**: ฟังก์ชัน `calculate_backup_amounts_for_post` จะถูกกระตุ้นโดยอัตโนมัติหลังจากมีการชำระเงินหรืออัปเดตของรางวัล เพื่อปรับปรุงข้อมูลสถิติ "สรุปรายละเอียดผู้สนับสนุน" (Supporter Breakdown)
+2.  **การวิเคราะห์ระดับรางวัล**: ฟังก์ชัน `calculate_backup_amounts_for_campaign` จะถูกกระตุ้นโดยอัตโนมัติหลังจากมีการชำระเงินหรืออัปเดตของรางวัล เพื่อปรับปรุงข้อมูลสถิติ "สรุปรายละเอียดผู้สนับสนุน" (Supporter Breakdown)
 3.  **การจัดการสื่อ**: โดยปกติของรางวัลแต่ละรายการจะมีรูปภาพประกอบ ซึ่งจัดการผ่าน `MediaService`
-4.  **การรวมระบบ**: โมเดล `Reward` จะเก็บ `post_id` ไว้เป็น Foreign key
+4.  **การรวมระบบ**: โมเดล `Reward` จะเก็บ `campaign_id` ไว้เป็น Foreign key
