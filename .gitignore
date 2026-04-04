@@ -9,7 +9,8 @@ wheels/
 
 # Virtual environments
 .venv
-.env*
+.env
+.env.local
 
 # OS
 .DS_Store
