@@ -12,7 +12,7 @@
 - [schema.py](file:///Users/wisapat/Documents/Code/Git/okard-backend/src/modules/for_you/schema.py): โครงสร้างข้อมูลสำหรับผลลัพธ์แคมเปญที่ได้รับการให้คะแนนแล้ว
 
 ### โครงสร้างฝั่ง Frontend
-- [api/api.ts](file:///Users/wisapat/Documents/Code/Git/okard-frontend/src/modules/post/api/api.ts): ฟังก์ชัน `getForYouCampaigns` ทำหน้าที่ดึงรายการข้อมูลที่ปรับให้เข้ากับบุคคล
+- [api/api.ts](file:///Users/wisapat/Documents/Code/Git/okard-frontend/src/modules/campaign/api/api.ts): ฟังก์ชัน `getForYouCampaigns` ทำหน้าที่ดึงรายการข้อมูลที่ปรับให้เข้ากับบุคคล
 - โดยปกติจะแสดงในแท็บ "สำหรับคุณ" บนหน้าสำรวจ (Explore) หรือหน้าแรก (Home)
 
 ---
@@ -26,7 +26,7 @@ graph TD
     User[โปรไฟล์ผู้ใช้] -->|ประวัติการเข้าชม| VecBuilder[ตัวสร้างเวกเตอร์ผู้ใช้]
     VecBuilder -->|ค่าเฉลี่ยการฝังตัว| UserVec[เวกเตอร์ความชอบของผู้ใช้]
     
-    Candidates[โพสต์ที่เข้ารอบ] -->|ตัวคูณทางความหมาย| Scorer[ตัวให้คะแนนสุดท้าย]
+    Candidates[แคมเปญที่เข้ารอบ] -->|ตัวคูณทางความหมาย| Scorer[ตัวให้คะแนนสุดท้าย]
     UserVec -->|Cosine Similarity| Scorer
     Affinity[ความสนใจหมวดหมู่ของผู้ใช้] -->|น้ำหนัก 20%| Scorer
     Popularity[จำนวนผู้สนับสนุน] -->|น้ำหนัก 15%| Scorer
@@ -44,8 +44,8 @@ graph TD
 | โปรแกรมย่อย | หน้าที่ความรับผิดชอบ | ข้อมูลเข้า (Input) | ข้อมูลออก (Output) |
 | :--- | :--- | :--- | :--- |
 | `for_you` | จุดเริ่มต้นหลักที่จัดการการดึงข้อมูลและการให้คะแนน | `db`, `user_id` | `List[ScoredCampaign]` |
-| `_build_user_vector` | สร้างเวกเตอร์ค่าเฉลี่ยถ่วงน้ำหนักของโพสต์ที่ผู้ใช้เพิ่งเข้าชมเมื่อเร็วๆ นี้ | `db`, `user_id` | `np.ndarray` |
-| `diversity_penalty` | ลดคะแนนของโพสต์ที่มีหมวดหมู่ซ้ำกับรายการที่ถูกเลือกไว้ก่อนหน้าแล้ว | `post`, `recent_posts`| ค่าลอยตัว `penalty` |
+| `_build_user_vector` | สร้างเวกเตอร์ค่าเฉลี่ยถ่วงน้ำหนักของแคมเปญที่ผู้ใช้เพิ่งเข้าชมเมื่อเร็วๆ นี้ | `db`, `user_id` | `np.ndarray` |
+| `diversity_penalty` | ลดคะแนนของแคมเปญที่มีหมวดหมู่ซ้ำกับรายการที่ถูกเลือกไว้ก่อนหน้าแล้ว | `campaign`, `recent_campaigns`| ค่าลอยตัว `penalty` |
 | `inject_exploration` | สลับผลลัพธ์อันดับต้นๆ บางส่วนกับรายการอันดับต่ำเพื่อป้องกันการเกิด Echo chambers (การเห็นแต่สิ่งที่ชอบซ้ำๆ) | `scored` (รายการ) | รายการ (`List`) |
 
 ---

@@ -25,7 +25,7 @@
 
 ## 2. ภาพรวมการทำงาน (Top-Down Functional Overview)
 
-โมดูลผู้ใช้ทำหน้าที่เป็น "จุดยึดหลัก" (Anchor) สำหรับโมดูลอื่นๆ เช่น โพสต์ (Posts) และผู้สร้าง (Creators)
+โมดูลผู้ใช้ทำหน้าที่เป็น "จุดยึดหลัก" (Anchor) สำหรับโมดูลอื่นๆ เช่น แคมเปญ (Campaigns) และผู้สร้าง (Creators)
 
 ```mermaid
 sequenceDiagram

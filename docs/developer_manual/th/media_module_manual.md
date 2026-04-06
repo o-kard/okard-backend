@@ -24,7 +24,7 @@
 
 ```mermaid
 graph TD
-    User[User/Post/Reward] -->|อ้างอิง| Handler[Media Handler]
+    User[User/Campaign/Reward] -->|อ้างอิง| Handler[Media Handler]
     Handler -->|เชื่อมโยงไปยัง| Media[บันทึกข้อมูลสื่อ]
     Media -->|จัดเก็บใน| Minio[(MinIO Storage)]
     
@@ -40,7 +40,7 @@ graph TD
 
 | โปรแกรมย่อย | หน้าที่ความรับผิดชอบ | ข้อมูลเข้า (Input) | ข้อมูลออก (Output) |
 | :--- | :--- | :--- | :--- |
-| `create_media_from_upload` | จัดการการอัปโหลดไฟล์เดียวพร้อมระบุประเภทการอ้างอิง (User/Post) | `db`, `file`, `post_id/clerk_id` | `Media` |
+| `create_media_from_upload` | จัดการการอัปโหลดไฟล์เดียวพร้อมระบุประเภทการอ้างอิง (User/Campaign) | `db`, `file`, `campaign_id/clerk_id` | `Media` |
 | `_save_files_and_create_media`| ประมวลผลแบบกลุ่มสำหรับแคมเปญ/รางวัล รองรับ `media_manifest` สำหรับการจัดลำดับ | `db`, `parent_type`, `parent_id`, `files`, `manifest` | `List[Media]` |
 | `delete_media` | ลบบันทึกข้อมูลในฐานข้อมูลและไฟล์จริงออกจาก MinIO | `db`, `media_id` | `Media` (ที่ถูกลบ) |
 
